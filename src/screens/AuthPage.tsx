@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon';
 import { WireDialog } from '../components/WireDialog';
 import { apiRequest, type Tokens } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { previewLoginEnabled } from '../lib/preview-session';
 
 type Step =
   'entry' | 'login' | 'terms' | 'password' | 'verification' | 'complete';
@@ -48,7 +49,7 @@ function PasswordField({
 }
 
 export function AuthPage() {
-  const { establish } = useAuth();
+  const { establish, previewLogin } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('entry');
   const [email, setEmail] = useState('');
@@ -94,6 +95,19 @@ export function AuthPage() {
     setError('');
     try {
       if (step === 'entry') {
+        const identifier = email.trim();
+        if (/^01\d{8,9}$/.test(identifier.replace(/-/g, ''))) {
+          navigate(`/signup/identity?phone=${identifier.replace(/-/g, '')}`);
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+          throw new Error('휴대전화 번호 또는 이메일을 확인해 주세요.');
+        }
+        if (previewLoginEnabled) {
+          previewLogin(identifier);
+          navigate('/');
+          return;
+        }
         const data = await apiRequest<{ registered: boolean }>(
           '/auth/identifiers/check',
           { method: 'POST', body: JSON.stringify({ identifier: email }) },
@@ -188,15 +202,38 @@ export function AuthPage() {
         />
       )}
       {step === 'entry' ? (
-        <div className="auth-entry-content">
-          <div className="auth-logo-placeholder" />
-          <h1 className="brand-wordmark">YIPPEE CLUB</h1>
-          <p>집에서도 신나게 놀이해요!</p>
+        <div className="auth-entry-content reference-auth">
+          <Link className="icon-button auth-back" to="/" aria-label="뒤로가기">
+            <Icon name="back" size={32} />
+          </Link>
+          <div className="auth-intro">
+            <div className="auth-logo-placeholder" />
+            <p>YIPPEE CLUB과 함께 성장해요!</p>
+          </div>
+          <div className="auth-social-stack">
+            {['카카오', 'Apple', '네이버'].map((provider) => (
+              <button
+                type="button"
+                className={`button social-button social-button--${provider === '카카오' ? 'kakao' : provider === 'Apple' ? 'apple' : 'naver'}`}
+                key={provider}
+                onClick={() =>
+                  setNotice(
+                    '소셜 로그인은 아직 연결하지 않았어요. 이메일로 시작해 주세요.',
+                  )
+                }
+              >
+                {provider}로 시작하기
+              </button>
+            ))}
+          </div>
+          <div className="auth-or">
+            <span>또는</span>
+          </div>
           <div className="auth-entry-fields">
             <label className="wire-field">
               휴대전화 또는 이메일
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -215,26 +252,11 @@ export function AuthPage() {
             >
               시작하기
             </button>
-            <div className="auth-or">
-              <img src="/assets/39b7c.svg" alt="" />
-              <span>또는</span>
-              <img src="/assets/73078.svg" alt="" />
-            </div>
-            {['네이버', 'Apple', '카카오'].map((provider) => (
-              <button
-                type="button"
-                className="button social-button"
-                key={provider}
-                onClick={() =>
-                  setNotice(
-                    '소셜 로그인은 아직 연결하지 않았어요. 이메일로 시작해 주세요.',
-                  )
-                }
-              >
-                <img src="/assets/1cf59.svg" alt="" />
-                {provider}로 시작하기
-              </button>
-            ))}
+            {previewLoginEnabled && (
+              <p className="wire-note">
+                화면 확인용 가로그인: 이메일만 입력하면 시작할 수 있어요.
+              </p>
+            )}
           </div>
         </div>
       ) : step === 'complete' ? (

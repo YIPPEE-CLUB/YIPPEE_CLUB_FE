@@ -7,7 +7,8 @@ import { Icon } from '../components/Icon';
 import { WireDialog } from '../components/WireDialog';
 import { apiRequest } from '../lib/api';
 import { LoginPrompt } from './ConnectedPages';
-import { childAgeLabel } from '../lib/date';
+import { childAgeLabel, formatBirthDate } from '../lib/date';
+import { ReferenceHeader } from '../components/ReferenceHeader';
 
 interface Category {
   id: number;
@@ -43,7 +44,7 @@ export function ChildrenPage() {
       className="screen"
       data-figma-node={children.length ? '117:1240' : '124:3937'}
     >
-      <ScreenHeader title="아이 정보" backTo="/profile" />
+      <ReferenceHeader title="아이 정보" backTo="/profile" />
       {!user ? (
         <LoginPrompt />
       ) : loading ? (
@@ -56,7 +57,15 @@ export function ChildrenPage() {
             <article className="child-info-card" key={child.id}>
               <div>
                 <strong>{child.name}</strong>
-                <small>{childAgeLabel(child.birth_date)}</small>
+                <small>
+                  {child.birth_date.slice(0, 7).replace('-', '년 ')}월생 ·{' '}
+                  {childAgeLabel(child.birth_date).split(' · ')[0]} ·{' '}
+                  {child.gender === 'female'
+                    ? '여아'
+                    : child.gender === 'male'
+                      ? '남아'
+                      : ''}
+                </small>
               </div>
               <Link
                 className="icon-button"
@@ -162,6 +171,8 @@ export function ChildFormPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState(0);
+  const [leave, setLeave] = useState(false);
   useEffect(() => {
     if (existing) {
       setName(existing.name);
@@ -186,6 +197,29 @@ export function ChildFormPage() {
   );
   async function submit(event: FormEvent) {
     event.preventDefault();
+    const birthDate = `${year}-${month}-${day}`;
+    if (formatBirthDate(birthDate) === '날짜 확인 필요') {
+      setError('생년월일을 확인해 주세요.');
+      return;
+    }
+    const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' })
+      .format(new Date())
+      .split('-')
+      .map(Number);
+    const ageMonths =
+      (today[0] - Number(year)) * 12 +
+      today[1] -
+      Number(month) -
+      (today[2] < Number(day) ? 1 : 0);
+    if (ageMonths < 12 || ageMonths > 72) {
+      setError('12개월(만1세)~72개월(만5세)까지 이용할 수 있어요.');
+      return;
+    }
+    setError('');
+    if (!childId && step === 0) {
+      setStep(1);
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -209,148 +243,162 @@ export function ChildFormPage() {
   }
   return (
     <form
-      className="screen"
+      className="screen reference-child-form"
       onSubmit={submit}
       data-figma-node={childId ? '124:3956' : '117:1274'}
     >
-      <ScreenHeader
+      <ReferenceHeader
         title={childId ? '아이 정보 수정' : '아이 추가'}
-        backTo="/children"
+        onBack={() => (step ? setStep(0) : setLeave(true))}
       />
       {!user ? (
         <LoginPrompt />
       ) : (
         <>
           <div className="screen-content form-stack">
-            {!childId && <p style={{ fontSize: 14 }}>1 / 2　아이 정보</p>}
-            <label className="wire-field">
-              <span>
-                아이 이름{!childId && <span className="required">*</span>}
-              </span>
-              <input
-                aria-label="아이 이름"
-                placeholder="실명"
-                required
-                maxLength={40}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <h2 className="wire-subtitle">성별</h2>
-            <div className="chips">
-              {[
-                ['female', '여아'],
-                ['male', '남아'],
-              ].map(([value, label]) => (
-                <button
-                  type="button"
-                  key={value}
-                  className={`chip ${gender === value ? 'is-selected' : ''}`}
-                  aria-pressed={gender === value}
-                  onClick={() =>
-                    setGender(gender === value ? 'unspecified' : value)
-                  }
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="wire-field">
-              <span>
-                생년월일{!childId && <span className="required">*</span>}
-              </span>
-              <div className="date-selects">
-                <select
-                  className="wire-select"
-                  aria-label="생년월일 연도"
-                  required
-                  value={year}
-                  onChange={(event) => setYear(event.target.value)}
-                >
-                  <option value="">연도</option>
-                  {Array.from(
-                    { length: 12 },
-                    (_, index) => currentYear - index,
-                  ).map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="wire-select"
-                  aria-label="생년월일 월"
-                  required
-                  value={month}
-                  onChange={(event) => setMonth(event.target.value)}
-                >
-                  <option value="">월</option>
-                  {Array.from({ length: 12 }, (_, index) =>
-                    String(index + 1).padStart(2, '0'),
-                  ).map((value) => (
-                    <option key={value} value={value}>
-                      {Number(value)}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="wire-select"
-                  aria-label="생년월일 일"
-                  required
-                  value={day}
-                  onChange={(event) => setDay(event.target.value)}
-                >
-                  <option value="">일</option>
-                  {Array.from({ length: 31 }, (_, index) =>
-                    String(index + 1).padStart(2, '0'),
-                  ).map((value) => (
-                    <option key={value} value={value}>
-                      {Number(value)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
             {!childId && (
-              <p className="wire-note">
-                12개월(만 1세)~72개월(만 5세)까지 이용 가능
+              <p className="child-steps">
+                <span className={step === 0 ? 'is-current' : ''}>1</span> 아이
+                정보 <span className={step === 1 ? 'is-current' : ''}>2</span>
+                {step === 1 && ' 관심있는 놀이활동'}
               </p>
             )}
-            <h2 className="wire-subtitle">관심있는 놀이활동</h2>
-            {[
-              interestOptions.slice(0, 4),
-              interestOptions.slice(4, 10),
-              interestOptions.slice(10),
-            ].map((group, groupIndex) => (
-              <div className="chips" key={groupIndex}>
-                {group.map(([code, label]) => {
-                  const category = categories.find(
-                    (item) => item.code === code,
-                  );
-                  const selected =
-                    !!category && interests.includes(category.id);
-                  return (
-                    <button
-                      type="button"
-                      key={code}
-                      disabled={!category}
-                      className={`chip ${selected ? 'is-selected' : ''}`}
-                      aria-pressed={selected}
-                      onClick={() => {
-                        if (category)
-                          setInterests(
-                            selected
-                              ? interests.filter((id) => id !== category.id)
-                              : [...interests, category.id],
-                          );
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
+            <div className="child-basics" hidden={!childId && step === 1}>
+              <div className="child-name-gender">
+                <label className="wire-field">
+                  <span>
+                    아이 이름{!childId && <span className="required">*</span>}
+                  </span>
+                  <input
+                    aria-label="아이 이름"
+                    placeholder="실명"
+                    required
+                    maxLength={40}
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                </label>
+                <label className="wire-field">
+                  성별
+                  <select
+                    className="wire-select"
+                    aria-label="성별"
+                    value={gender}
+                    onChange={(event) => setGender(event.target.value)}
+                  >
+                    <option value="unspecified">성별</option>
+                    <option value="female">여아</option>
+                    <option value="male">남아</option>
+                  </select>
+                </label>
               </div>
-            ))}
+              <div className="wire-field">
+                <span>
+                  생년월일{!childId && <span className="required">*</span>}
+                  {!childId && (
+                    <small className="child-age-note">
+                      12개월(만1세)~72개월(만5세)까지 이용가능
+                    </small>
+                  )}
+                </span>
+                <div className="date-selects">
+                  <select
+                    className="wire-select"
+                    aria-label="생년월일 연도"
+                    required
+                    value={year}
+                    onChange={(event) => setYear(event.target.value)}
+                  >
+                    <option value="">연도</option>
+                    {Array.from(
+                      { length: 12 },
+                      (_, index) => currentYear - index,
+                    ).map((value) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="wire-select"
+                    aria-label="생년월일 월"
+                    required
+                    value={month}
+                    onChange={(event) => setMonth(event.target.value)}
+                  >
+                    <option value="">월</option>
+                    {Array.from({ length: 12 }, (_, index) =>
+                      String(index + 1).padStart(2, '0'),
+                    ).map((value) => (
+                      <option key={value} value={value}>
+                        {Number(value)}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="wire-select"
+                    aria-label="생년월일 일"
+                    required
+                    value={day}
+                    onChange={(event) => setDay(event.target.value)}
+                  >
+                    <option value="">일</option>
+                    {Array.from(
+                      {
+                        length:
+                          year && month
+                            ? new Date(Number(year), Number(month), 0).getDate()
+                            : 31,
+                      },
+                      (_, index) => String(index + 1).padStart(2, '0'),
+                    ).map((value) => (
+                      <option key={value} value={value}>
+                        {Number(value)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            {(childId || step === 1) && (
+              <>
+                <h2 className="wire-subtitle">관심있는 놀이활동</h2>
+                {[
+                  interestOptions.slice(0, 4),
+                  interestOptions.slice(4, 10),
+                  interestOptions.slice(10),
+                ].map((group, groupIndex) => (
+                  <div className="chips" key={groupIndex}>
+                    {group.map(([code, label]) => {
+                      const category = categories.find(
+                        (item) => item.code === code,
+                      );
+                      const selected =
+                        !!category && interests.includes(category.id);
+                      return (
+                        <button
+                          type="button"
+                          key={code}
+                          disabled={!category}
+                          className={`chip ${selected ? 'is-selected' : ''}`}
+                          aria-pressed={selected}
+                          onClick={() => {
+                            if (category)
+                              setInterests(
+                                selected
+                                  ? interests.filter((id) => id !== category.id)
+                                  : [...interests, category.id],
+                              );
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </>
+            )}
             {error && (
               <p className="form-error" role="alert">
                 {error}
@@ -362,10 +410,46 @@ export function ChildFormPage() {
               className="button button--primary"
               disabled={busy || !name.trim() || !year || !month || !day}
             >
-              {busy ? '저장 중…' : childId ? '저장하기' : '다음'}
+              {busy
+                ? '저장 중…'
+                : childId
+                  ? '저장하기'
+                  : step === 0
+                    ? '다음'
+                    : '등록하기'}
             </button>
           </div>
         </>
+      )}
+      {leave && (
+        <WireDialog
+          title="아이 입력 취소"
+          className="leave-dialog"
+          onClose={() => setLeave(false)}
+        >
+          <h2>입력을 취소하시겠어요?</h2>
+          <p>
+            이전 화면으로 돌아가면
+            <br />
+            입력 중인 아이 정보가 모두 사라져요.
+          </p>
+          <div className="dialog-actions">
+            <button
+              type="button"
+              className="button"
+              onClick={() => navigate('/children')}
+            >
+              뒤로 가기
+            </button>
+            <button
+              type="button"
+              className="button button--accent"
+              onClick={() => setLeave(false)}
+            >
+              계속 입력하기
+            </button>
+          </div>
+        </WireDialog>
       )}
     </form>
   );

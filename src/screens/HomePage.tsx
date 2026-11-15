@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { OneClickOverlay } from './ReferenceScreens';
 import type { Activity } from '../types';
 import { trendingKeywords } from '../data/activities';
 import { ActivityCard } from '../components/ActivityCard';
@@ -69,9 +70,19 @@ export function TrendingKeywords({
 }
 
 export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
-  const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user, ready, requestLogin } = useAuth();
   const { children } = useChildren();
   const child = children.find((item) => item.id === user?.active_child_id);
+  useEffect(() => {
+    if (
+      ready &&
+      !user &&
+      sessionStorage.getItem('yippee.guest.browsing') !== 'true'
+    )
+      requestLogin();
+  }, [ready, user]);
   return (
     <div
       className="home-page"
@@ -82,7 +93,15 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
           className="avatar-placeholder"
           to="/profile"
           aria-label="내 정보"
-        />
+          onClick={(event) => {
+            if (!user) {
+              event.preventDefault();
+              requestLogin();
+            }
+          }}
+        >
+          <img src="/assets/5fc5c.svg" alt="" />
+        </Link>
         <h1>YIPPEE CLUB</h1>
         <div className="header-actions">
           <Link className="icon-button" to="/notifications" aria-label="알림">
@@ -100,7 +119,7 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
           <h2 className="home-greeting">
             {child ? (
               <>
-                {child.name} 부모님,
+                <em>{child.name}</em> 부모님,
                 <br />
                 오늘은 어떤 특별한 놀이를 해볼까요?
               </>
@@ -142,7 +161,7 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
                   </Link>
                 ))}
               </div>
-              <Link className="button button--primary" to="/recommendations">
+              <Link className="button button--primary" to="/?finder=1">
                 원클릭 맞춤형 놀이 찾기
               </Link>
             </section>
@@ -165,7 +184,7 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
                   처음 오셨나요?
                 </strong>
               </Link>
-              <Link className="intro-card" to="/how-to">
+              <Link className="intro-card" to="/how-to/badges">
                 <small>이용방법</small>
                 <strong>
                   즐겁게 놀이하면
@@ -174,9 +193,13 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
                 </strong>
               </Link>
             </section>
-            <Link className="button button--primary" to="/activities">
+            <button
+              type="button"
+              className="button button--primary"
+              onClick={requestLogin}
+            >
               오늘부터 놀이활동 시작하기
-            </Link>
+            </button>
           </>
         )}
         <section className="section">
@@ -186,12 +209,12 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
               <br />
               인기많은 활동지
             </h2>
-            <Link className="text-link" to="/activities">
+            <Link className="text-link" to="/activities/popular">
               전체보기 <Icon name="chevron" size={16} />
             </Link>
           </div>
-          <div className="activity-grid">
-            {activities.slice(0, 2).map((activity) => (
+          <div className="home-activity-track">
+            {activities.slice(0, 3).map((activity) => (
               <ActivityCard
                 key={activity.id}
                 activity={activity}
@@ -212,15 +235,30 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
               전체보기 <Icon name="chevron" size={16} />
             </Link>
           </div>
-          {['낯가리는 아이', '약속하기 연습'].map((title, index) => (
-            <Link className="guide-row" to={`/guides/${index + 1}`} key={title}>
-              <span className="guide-row__thumbnail" />
-              <span>{title}</span>
-              <Icon name="chevron" />
-            </Link>
-          ))}
+          <div className="home-guide-track">
+            {['낯가리는 아이', '약속하기 연습'].map((title, index) => (
+              <Link
+                className="guide-row"
+                to={`/guides/${index + 1}`}
+                key={title}
+              >
+                <span className="guide-row__thumbnail" />
+                <span>{title}</span>
+                <Icon name="chevron" />
+              </Link>
+            ))}
+          </div>
         </section>
       </div>
+      {params.get('finder') === '1' && (
+        <OneClickOverlay
+          onClose={() => setParams({})}
+          onFind={() => {
+            if (!user) requestLogin();
+            else navigate('/recommendations');
+          }}
+        />
+      )}
     </div>
   );
 }

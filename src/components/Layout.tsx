@@ -24,7 +24,14 @@ const navigation: { path: string; label: string; icon: IconName }[] = [
 export function Layout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, reload } = useAuth();
+  const {
+    user,
+    reload,
+    loginNotice,
+    loginPromptOpen,
+    requestLogin,
+    dismissLogin,
+  } = useAuth();
   const { children } = useChildren();
   const [switching, setSwitching] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -35,6 +42,8 @@ export function Layout() {
   const hasNav = [
     '/',
     '/activities',
+    '/activities/popular',
+    '/recommendations',
     '/search',
     '/search/results',
     '/saved',
@@ -64,7 +73,7 @@ export function Layout() {
                 className="nav-item nav-item--child"
                 aria-label="아이 전환"
                 onClick={() => {
-                  if (!user) navigate('/login');
+                  if (!user) requestLogin();
                   else {
                     setError('');
                     setSwitching(true);
@@ -81,6 +90,12 @@ export function Layout() {
               <NavLink
                 key={path}
                 to={path}
+                onClick={(event) => {
+                  if (!user && ['/saved', '/profile'].includes(path)) {
+                    event.preventDefault();
+                    requestLogin();
+                  }
+                }}
                 end={path === '/'}
                 className={({ isActive }) =>
                   `nav-item ${isActive || (path === '/activities' && pathname.startsWith('/search')) ? 'is-active' : ''}`
@@ -147,6 +162,40 @@ export function Layout() {
             <Icon name="plus" />
           </Link>
         </WireDialog>
+      )}
+      {loginPromptOpen && (
+        <WireDialog
+          title="로그인 안내"
+          className="login-gate"
+          onClose={dismissLogin}
+        >
+          <p>
+            서비스 이용은 회원만 가능해요.
+            <br />
+            로그인/회원가입을 하시겠어요?
+          </p>
+          <div className="dialog-actions">
+            <button type="button" className="button" onClick={dismissLogin}>
+              그냥 둘러볼래요
+            </button>
+            <button
+              type="button"
+              className="button button--accent"
+              onClick={() => {
+                dismissLogin();
+                navigate('/login');
+              }}
+            >
+              로그인 할래요!
+            </button>
+          </div>
+        </WireDialog>
+      )}
+      {user && loginNotice && pathname === '/' && (
+        <div className="login-toast" role="status">
+          <img src="/assets/6005d.svg" alt="" />
+          로그인 되었습니다.
+        </div>
       )}
     </div>
   );

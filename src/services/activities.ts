@@ -33,6 +33,8 @@ export async function listActivities(signal: AbortSignal): Promise<Activity[]> {
       duration: item.duration ?? 0,
       difficulty: item.difficulty ?? 'easy',
       ageYears: item.ageYears ?? 0,
+      thumbnail: item.thumbnail,
+      location: item.location,
     };
   });
 }

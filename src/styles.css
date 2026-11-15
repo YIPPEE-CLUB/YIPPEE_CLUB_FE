@@ -20,6 +20,330 @@
   --page-padding: 24px;
   --radius-card: 15px;
 }
+
+/* Figma: 인기 활동지 TOP 3 (117:853, 192:4817, 192:4921). */
+.popular-page {
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100dvh - 78px);
+}
+.identity-heading {
+  font-size: 20px;
+  line-height: 1.4;
+}
+.identity-content {
+  gap: 24px;
+}
+.identity-birth {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.identity-birth input:first-child {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+}
+.identity-birth input[type='password'] {
+  width: 60px;
+  min-width: 0;
+  text-align: center;
+  padding: 12px;
+}
+.identity-mask {
+  font-size: 14px;
+  letter-spacing: -1px;
+  color: #aaa;
+}
+.carrier-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid #d9d9d9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.carrier-options button {
+  height: 44px;
+  background: #f1f1f3;
+  font-size: 14px;
+  border-right: 1px solid #d9d9d9;
+}
+.carrier-options button:last-child {
+  border-right: 0;
+}
+.carrier-options button[aria-pressed='true'] {
+  background: #747474;
+  color: #fff;
+}
+.identity-phone {
+  display: flex;
+  gap: 8px;
+}
+.identity-phone input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  font-size: 14px;
+}
+.identity-phone > .button {
+  width: 90px;
+  min-width: 0;
+  padding: 8px;
+  font-size: 14px;
+}
+.carrier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.carrier-list button {
+  text-align: left;
+  padding: 16px 0;
+  font-size: 16px;
+}
+.write-activity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.write-activity__thumbnail {
+  width: 96px;
+  height: 96px;
+  border-radius: 15px;
+  background: var(--color-placeholder);
+  flex-shrink: 0;
+}
+.write-activity strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+}
+.review-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.review-stars button {
+  color: #bdbdbd;
+  font-size: 28px;
+}
+.review-stars button.is-selected {
+  color: #747474;
+}
+.write-photo > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.write-photo > button {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.write-photo > button .icon {
+  position: static;
+}
+.purchase-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.popular-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 12px 24px 0;
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+.popular-reviews.is-visible {
+  opacity: 1;
+}
+.popular-reviews p {
+  height: 87px;
+  padding: 16px 20px;
+  border-radius: 25px;
+  background: #bdbdbd;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.popular-reviews p:nth-child(2) {
+  background: var(--color-placeholder);
+}
+.popular-reviews p:nth-child(3) {
+  background: var(--color-soft);
+}
+.popular-carousel {
+  position: relative;
+  margin-top: -27px;
+}
+.popular-track {
+  display: flex;
+  gap: 20px;
+  padding: 0 max(24px, calc((100% - 272px) / 2)) 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.popular-track::-webkit-scrollbar {
+  display: none;
+}
+.popular-slide {
+  flex: 0 0 min(272px, calc(100vw - 48px));
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+.popular-slide .activity-card__thumbnail {
+  height: 259px;
+  border-radius: 36px;
+}
+.popular-slide .activity-card {
+  gap: 12px;
+}
+.popular-slide .activity-card__title {
+  font-size: 20px;
+}
+.popular-slide .activity-card strong {
+  font-size: 24px;
+}
+.popular-slide .tag {
+  font-size: 16px;
+}
+.popular-slide .activity-card__save {
+  top: 12px;
+  right: 16px;
+}
+.popular-slide .activity-card__save .icon {
+  transform: scale(1.4);
+}
+.popular-rank {
+  position: absolute;
+  top: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.popular-rank img {
+  position: absolute;
+}
+.popular-rank strong {
+  position: relative;
+  margin-top: 14px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+/* Figma: 활동지 완료 → 리뷰 → 배지 획득의 세 단계 안내. */
+.badge-stage {
+  height: 220px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  background: var(--color-placeholder);
+}
+.badge-stage__paper {
+  position: absolute;
+  top: 40px;
+  left: calc(50% - 36px);
+  width: 72px;
+  height: 100px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 8px;
+  background: #fff;
+  transition:
+    left 500ms,
+    opacity 500ms;
+}
+.badge-stage__paper span,
+.badge-stage__review i {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: #bdbdbd;
+}
+.badge-stage__paper span:last-child {
+  width: 32px;
+}
+.badge-stage__review {
+  position: absolute;
+  top: 52px;
+  left: 100%;
+  width: 140px;
+  height: 76px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  opacity: 0;
+  transition:
+    left 500ms,
+    opacity 500ms;
+}
+.badge-stage__review span {
+  color: var(--color-primary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.badge-stage__review i {
+  margin-top: 14px;
+}
+.badge-stage__badge {
+  position: absolute;
+  top: 44px;
+  left: calc(50% - 48px);
+  opacity: 0;
+  transform: scale(0.25);
+  transition:
+    opacity 500ms,
+    transform 500ms;
+}
+.badge-stage__caption {
+  position: absolute;
+  top: 176px;
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.badge-stage--1 .badge-stage__paper,
+.badge-stage--2 .badge-stage__paper {
+  left: 40px;
+}
+.badge-stage--1 .badge-stage__review,
+.badge-stage--2 .badge-stage__review {
+  left: calc(100% - 184px);
+  opacity: 1;
+}
+.badge-stage--2 .badge-stage__paper,
+.badge-stage--2 .badge-stage__review {
+  opacity: 0.3;
+}
+.badge-stage--2 .badge-stage__badge {
+  opacity: 1;
+  transform: scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .popular-reviews,
+  .badge-stage > * {
+    transition: none;
+  }
+  .popular-track {
+    scroll-behavior: auto;
+  }
+}
 * {
   box-sizing: border-box;
 }

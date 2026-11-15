@@ -10,6 +10,7 @@ import {
   filterActivities,
 } from '../components/CatalogFilters';
 import { TrendingKeywords, type CatalogProps } from './HomePage';
+import { ReferenceCatalogPage } from './ReferenceScreens';
 
 export function ActivitiesPage({
   activities,
@@ -20,6 +21,16 @@ export function ActivitiesPage({
   const [category, setCategory] = useState(params.get('category') || '전체');
   const [filters, setFilters] = useState(defaultFilters);
   const filtered = filterActivities(activities, filters, '', category);
+  const experiences = activities.filter((item) => item.location);
+  if (experiences.length)
+    return (
+      <ReferenceCatalogPage
+        items={experiences}
+        activities={activities}
+        savedIds={savedIds}
+        onToggle={onToggle}
+      />
+    );
 
   return (
     <div className="page-content" data-figma-node="117:538">

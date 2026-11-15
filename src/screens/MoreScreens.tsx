@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { WireDialog } from '../components/WireDialog';
 import { Icon } from '../components/Icon';
@@ -211,11 +211,12 @@ export function WithdrawPage() {
 }
 
 export function ReviewsPage() {
+  const { activityId } = useParams();
   const [sort, setSort] = useState('최신순');
   const [notice, setNotice] = useState('');
   return (
     <div className="screen" data-figma-node="123:2888">
-      <ScreenHeader title="리뷰" backTo="/activities/101" />
+      <ScreenHeader title="리뷰" backTo={`/activities/${activityId}`} />
       <div className="screen-content">
         <div className="info-panel">
           <h1 style={{ fontWeight: 600 }}>★ 0.0</h1>
@@ -262,8 +263,11 @@ export function ReviewsPage() {
         ))}
       </div>
       <div className="screen-actions">
-        <Link className="button button--primary" to="/orders">
-          구매내역에서 리뷰 쓰기
+        <Link
+          className="button button--primary"
+          to={`/activities/${activityId}/reviews/new`}
+        >
+          리뷰 쓰기
         </Link>
       </div>
       {notice && (

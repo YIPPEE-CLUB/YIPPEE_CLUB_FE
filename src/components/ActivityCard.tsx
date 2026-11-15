@@ -16,14 +16,18 @@ export function ActivityCard({
   showSave = true,
 }: ActivityCardProps) {
   return (
-    <article className="activity-card">
+    <article
+      className={`activity-card ${activity.location ? 'activity-card--experience' : ''}`}
+    >
       {/* Figma 원본처럼 회색 이미지 자리표시자를 유지합니다. */}
       <Link
         className="activity-card__thumbnail"
         to={`/activities/${activity.id}`}
         aria-label={`${activity.title} 상세 보기`}
-      />
-      {showSave && (
+      >
+        {activity.thumbnail && <img src={activity.thumbnail} alt="" />}
+      </Link>
+      {showSave && !activity.location && (
         <button
           className="activity-card__save"
           type="button"
@@ -34,10 +38,11 @@ export function ActivityCard({
           <Icon name={saved ? 'heartFilled' : 'heart'} />
         </button>
       )}
-      <span className="tag">
-        {activity.duration
-          ? `${activity.duration === 10 ? '5-10' : activity.duration}분`
-          : '시간 미정'}
+      <span className={`tag ${activity.location ? 'tag--location' : ''}`}>
+        {activity.location ||
+          (activity.duration
+            ? `${activity.duration === 10 ? '5-10' : activity.duration}분`
+            : '시간 미정')}
       </span>
       <Link className="activity-card__title" to={`/activities/${activity.id}`}>
         <span>[{activity.subtitle}]</span>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import '../styles.css';
+import '../reference.css';
 
 export const metadata: Metadata = {
   title: 'YIPPEE CLUB',

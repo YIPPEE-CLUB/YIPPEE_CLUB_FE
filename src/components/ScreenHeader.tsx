@@ -16,7 +16,12 @@ export function ScreenHeader({
   return (
     <header className="screen-header">
       {onBack ? (
-        <button className="icon-button" aria-label="뒤로가기" onClick={onBack}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="뒤로가기"
+          onClick={onBack}
+        >
           <Icon name="back" size={32} />
         </button>
       ) : (

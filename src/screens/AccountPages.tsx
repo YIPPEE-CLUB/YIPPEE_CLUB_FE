@@ -87,6 +87,28 @@ export function SavedPage({ activities, savedIds, onToggle }: CatalogProps) {
                 onToggle={onToggle}
                 showSave={!editing}
               />
+              {tab === 'purchases' && (
+                <div className="purchase-card-actions">
+                  <Link
+                    className="button button--small"
+                    to={`/viewer/${activity.id}`}
+                  >
+                    활동지 보기
+                  </Link>
+                  <Link
+                    className="button button--small"
+                    to={`/activities/${activity.id}/record`}
+                  >
+                    활동 인증하기
+                  </Link>
+                  <Link
+                    className="text-button"
+                    to={`/activities/${activity.id}/reviews/new`}
+                  >
+                    리뷰 쓰기
+                  </Link>
+                </div>
+              )}
               {editing && (
                 <input
                   className="saved-card-check"
@@ -195,7 +217,9 @@ export function ProfilePage() {
           </div>
         </header>
         <div className="profile-summary">
-          <div className="profile-avatar" />
+          <div className="profile-avatar">
+            <img src="/assets/01e9f.svg" alt="" />
+          </div>
           <div>
             <h2>
               {user
@@ -203,24 +227,37 @@ export function ProfilePage() {
                 : '로그인해 주세요'}
             </h2>
             <Link className="button" to={user ? '/profile/edit' : '/login'}>
+              {user && <Icon name="edit" size={16} />}
               {user ? '프로필 편집하기' : '로그인'}
             </Link>
           </div>
         </div>
+        <div className="profile-balances">
+          <div>
+            <span>만세 캐시</span>
+            <strong>0원</strong>
+          </div>
+          <div>
+            <span>쿠폰함</span>
+            <strong>0장</strong>
+          </div>
+          <div>
+            <span>만세포인트</span>
+            <strong>0P</strong>
+          </div>
+        </div>
       </div>
-      <Link className="menu-row menu-row--highlight" to="/badges">
-        <strong>
-          {child ? `${child.name}의` : '우리 아이의'} 만세도감 보러가기
-        </strong>
-        <Icon name="chevron" />
-      </Link>
+      <Link
+        className="profile-divider"
+        to="/badges"
+        aria-label={`${child?.name || '우리 아이'}의 만세도감 보러가기`}
+      />
       <div className="profile-menu">
         {[
           ['/children', '나의 아이 정보'],
-          ['/records', '활동 기록'],
           ['/orders', '결제 내역'],
           ['/cards', '결제 카드 관리'],
-          ['/support', '고객센터'],
+          ['/support/faq', '자주 묻는 질문'],
         ].map(([path, label]) => (
           <Link className="menu-row" key={path} to={path}>
             {label}
@@ -363,11 +400,20 @@ export function BadgesPage() {
             <br />
             ‘반짝배지’만 대표배지로 설정할 수 있어요.
           </p>
-          <div className="badge-circle" />
+          <div className="badge-circle badge-circle--representative">
+            <img src="/assets/1841a.svg" alt="잠긴 대표배지" />
+          </div>
           <div className="badge-grid">
-            {Array.from({ length: 15 }, (_, index) => (
+            {Array.from({ length: 21 }, (_, index) => (
               <div className="badge-item" key={index}>
-                <div className="badge-circle" />
+                <button
+                  type="button"
+                  className="badge-circle"
+                  aria-label={`잠긴 배지 ${index + 1}`}
+                  onClick={() => setHelp(true)}
+                >
+                  <img src="/assets/c2c84.svg" alt="" />
+                </button>
                 <span>???</span>
               </div>
             ))}

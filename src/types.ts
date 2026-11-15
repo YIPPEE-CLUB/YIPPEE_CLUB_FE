@@ -8,6 +8,8 @@ export interface Activity {
   duration: number;
   difficulty: 'easy' | 'normal';
   ageYears: number;
+  thumbnail?: string;
+  location?: string;
 }
 
 export interface Paginated<T> {

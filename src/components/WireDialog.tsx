@@ -6,11 +6,13 @@ export function WireDialog({
   children,
   onClose,
   sheet = false,
+  className = '',
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   sheet?: boolean;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -26,7 +28,7 @@ export function WireDialog({
   return (
     <dialog
       ref={ref}
-      className={sheet ? 'wire-dialog wire-sheet' : 'wire-dialog wire-popup'}
+      className={`${sheet ? 'wire-dialog wire-sheet' : 'wire-dialog wire-popup'} ${className}`}
       aria-label={title}
       onCancel={(event) => {
         event.preventDefault();

@@ -3,6 +3,17 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { HomePage } from './screens/HomePage';
 import { ActivitiesPage } from './screens/ActivitiesPage';
+import { PopularPage } from './screens/PopularPage';
+import { BadgeGuidePage } from './screens/BadgeGuidePage';
+import { IdentityPage } from './screens/IdentityPage';
+import { ActivityWritePage } from './screens/ActivityWritePage';
+import {
+  ReferenceOrdersPage,
+  ReferenceCardsPage,
+  ReferenceActivityTypesPage as ActivityTypesPage,
+  ReferenceRecommendationsPage as RecommendationsPage,
+  ReferenceAccountInfoPage,
+} from './screens/ReferenceScreens';
 import {
   BadgesPage,
   ProfilePage,
@@ -11,7 +22,6 @@ import {
 } from './screens/AccountPages';
 import { listActivities } from './services/activities';
 import type { Activity } from './types';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { apiRequest } from './lib/api';
 import type { Paginated } from './types';
@@ -36,7 +46,6 @@ import {
 import { CartPage, ActivityDetailPage } from './screens/ConnectedPages';
 import { ChildrenPage, ChildFormPage } from './screens/ChildrenPages';
 import {
-  ActivityTypesPage,
   GuidesPage,
   GuideDetailPage,
   HowToPage,
@@ -44,14 +53,12 @@ import {
   SettingsPage,
   NotificationSettingsPage,
   SupportPage,
-  RecommendationsPage,
   ViewerPage,
   CheckoutPage,
 } from './screens/AdditionalPages';
 
 export function App() {
-  const { user, ready } = useAuth();
-  const navigate = useNavigate();
+  const { user, ready, requestLogin } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -104,7 +111,7 @@ export function App() {
 
   async function toggleSaved(id: number) {
     if (!user) {
-      navigate('/login');
+      requestLogin();
       return;
     }
     if (saving) return;
@@ -157,6 +164,20 @@ export function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<HomePage {...catalogProps} />} />
+          <Route
+            path="activities/popular"
+            element={<PopularPage {...catalogProps} />}
+          />
+          <Route path="how-to/badges" element={<BadgeGuidePage />} />
+          <Route path="signup/identity" element={<IdentityPage />} />
+          <Route
+            path="activities/:activityId/reviews/new"
+            element={<ActivityWritePage activities={activities} />}
+          />
+          <Route
+            path="activities/:activityId/record"
+            element={<ActivityWritePage activities={activities} record />}
+          />
           <Route
             path="activities"
             element={<ActivitiesPage {...catalogProps} />}
@@ -214,9 +235,17 @@ export function App() {
           <Route path="guides/:guideId" element={<GuideDetailPage />} />
           <Route path="how-to" element={<HowToPage />} />
           <Route path="viewer/:activityId" element={<ViewerPage />} />
-          <Route path="orders" element={<EmptyScreen kind="orders" />} />
+          <Route path="orders" element={<ReferenceOrdersPage />} />
           <Route path="records" element={<EmptyScreen kind="records" />} />
-          <Route path="cards" element={<EmptyScreen kind="cards" />} />
+          <Route path="cards" element={<ReferenceCardsPage />} />
+          <Route
+            path="settings/bank-account"
+            element={<ReferenceAccountInfoPage />}
+          />
+          <Route
+            path="settings/contracts"
+            element={<ReferenceAccountInfoPage contract />}
+          />
           <Route path="settings" element={<SettingsPage />} />
           <Route
             path="settings/notifications"

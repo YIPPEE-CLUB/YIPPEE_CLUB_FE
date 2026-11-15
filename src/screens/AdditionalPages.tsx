@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useChildren } from '../context/ChildrenContext';
 import { categories } from '../data/activities';
 import type { CatalogProps } from './HomePage';
+import { ReferenceHeader } from '../components/ReferenceHeader';
 
 export function EmptyScreen({
   kind,
@@ -315,7 +316,7 @@ export function SettingsPage() {
   const [error, setError] = useState('');
   return (
     <div className="screen" data-figma-node="118:1475">
-      <ScreenHeader title="설정" backTo="/profile" />
+      <ReferenceHeader backTo="/profile" />
       <div className="screen-content settings-content">
         <h2 className="wire-subtitle">계정 정보</h2>
         <div className="settings-rows">
@@ -326,6 +327,8 @@ export function SettingsPage() {
           {[
             ['/settings/phone', '휴대전화 번호 변경'],
             ['/settings/password', '비밀번호 변경'],
+            ['/settings/bank-account', '계좌정보 조회'],
+            ['/settings/contracts', '계약서 조회'],
             ['/settings/notifications', '알림 설정'],
           ].map(([to, title]) => (
             <Link className="settings-row" to={to} key={to}>

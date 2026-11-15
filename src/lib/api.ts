@@ -1,3 +1,5 @@
+import { readPreviewSession, previewRequest } from './preview-session';
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -68,6 +70,12 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit & { accessToken?: string } = {},
 ): Promise<T> {
+  const preview = readPreviewSession();
+  if (preview) {
+    if (options.signal?.aborted)
+      throw new DOMException('Aborted', 'AbortError');
+    return previewRequest(preview, path, options) as T;
+  }
   const { accessToken, ...init } = options;
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');

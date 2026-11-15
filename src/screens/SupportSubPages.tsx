@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { ReferenceHeader } from '../components/ReferenceHeader';
 import { SearchField } from '../components/SearchField';
 import { WireDialog } from '../components/WireDialog';
 import { Icon } from '../components/Icon';
@@ -257,11 +258,13 @@ export function NotificationsPage() {
   const [tab, setTab] = useState('공지');
   return (
     <div className="screen" data-figma-node="118:1603">
-      <ScreenHeader title="알림센터" />
-      <div className="screen-content">
-        <div className="tabs">
+      <ReferenceHeader title="알림센터" backTo="/profile" />
+      <div className="reference-notifications">
+        <div className="tabs" role="tablist" aria-label="알림 종류">
           {['공지', '이벤트'].map((value) => (
             <button
+              role="tab"
+              aria-selected={tab === value}
               key={value}
               className={tab === value ? 'is-selected' : ''}
               onClick={() => setTab(value)}
@@ -270,10 +273,7 @@ export function NotificationsPage() {
             </button>
           ))}
         </div>
-        <div className="wire-empty wire-empty--search">
-          <div className="empty-circle" />
-          <h2>새로운 알림이 없어요</h2>
-        </div>
+        <div role="tabpanel" aria-label={`${tab} 알림`} />
       </div>
     </div>
   );
