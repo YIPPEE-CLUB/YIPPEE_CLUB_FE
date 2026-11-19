@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   useEffect(() => {
     if (!loginNotice) return;
-    const timer = setTimeout(() => setLoginNotice(false), 2600);
+    const timer = setTimeout(() => setLoginNotice(false), 2000);
     return () => clearTimeout(timer);
   }, [loginNotice]);
   function previewLogin(email: string) {

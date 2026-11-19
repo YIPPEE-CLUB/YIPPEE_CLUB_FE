@@ -6,6 +6,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { WireDialog } from '../components/WireDialog';
 import { Icon } from '../components/Icon';
 import { ActivityCard } from '../components/ActivityCard';
+import { getActivity, listCart } from '../services/activities';
 import type { Activity } from '../types';
 import type { CatalogProps } from './HomePage';
 
@@ -35,10 +36,10 @@ export function CartPage() {
       setLoading(false);
       return;
     }
-    apiRequest<{ items: Activity[] }>('/cart', { signal: controller.signal })
-      .then((cart) => {
-        setItems(cart.items);
-        setSelected(cart.items.map((item) => item.id));
+    listCart(controller.signal)
+      .then((items) => {
+        setItems(items);
+        setSelected(items.map((item) => item.id));
       })
       .catch((cause: Error) => {
         if (!controller.signal.aborted) setError(cause.message);
@@ -63,10 +64,10 @@ export function CartPage() {
       setError((cause as Error).message);
     } finally {
       try {
-        const cart = await apiRequest<{ items: Activity[] }>('/cart');
-        setItems(cart.items);
+        const items = await listCart();
+        setItems(items);
         setSelected((ids) =>
-          ids.filter((id) => cart.items.some((item) => item.id === id)),
+          ids.filter((id) => items.some((item) => item.id === id)),
         );
       } catch (cause) {
         setError((cause as Error).message);
@@ -154,19 +155,15 @@ export function CartPage() {
           </div>
           <div className="screen-actions">
             <div className="cart-total">
-              <span>총 결제 금액</span>
+              <span>활동지 금액</span>
               <span>{total.toLocaleString('ko-KR')}원</span>
             </div>
             <button
               className="button button--primary"
               disabled={!selected.length}
-              onClick={() =>
-                navigate('/checkout', {
-                  state: { activityIds: selected, total },
-                })
-              }
+              onClick={() => navigate(`/viewer/${selected[0]}`)}
             >
-              {total.toLocaleString('ko-KR')}원 결제하기
+              선택한 무료 활동지 보기
             </button>
           </div>
         </>
@@ -227,7 +224,26 @@ export function ActivityDetailPage({
   const { activityId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const activity = activities.find((item) => item.id === Number(activityId));
+  const [activity, setActivity] = useState<Activity>();
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  useEffect(() => {
+    const controller = new AbortController();
+    setActivity(undefined);
+    setLoading(true);
+    setLoadError('');
+    getActivity(Number(activityId), controller.signal)
+      .then((item) => {
+        if (!controller.signal.aborted) setActivity(item);
+      })
+      .catch((cause: Error) => {
+        if (!controller.signal.aborted) setLoadError(cause.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [activityId]);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [share, setShare] = useState(false);
@@ -263,15 +279,35 @@ export function ActivityDetailPage({
       />
       {activity ? (
         <>
-          <div className="detail-hero" />
+          <div className="detail-hero">
+            {activity.thumbnail && (
+              <img
+                src={activity.thumbnail}
+                alt={activity.title}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            )}
+          </div>
           <div className="detail-content">
             <div className="detail-tags">
               <span className="tag">
-                {activity.duration === 10 ? '5-10' : activity.duration}분
+                {activity.durationMin ?? activity.duration}–
+                {activity.durationMax ?? activity.duration}분
               </span>
-              <span className="tag">만 {activity.ageYears}세</span>
               <span className="tag">
-                난이도 {activity.difficulty === 'easy' ? '하' : '중'}
+                만 {activity.ageYears}–
+                {Math.floor(
+                  (activity.ageMaxMonths ?? activity.ageYears * 12) / 12,
+                )}
+                세
+              </span>
+              <span className="tag">
+                난이도{' '}
+                {activity.difficulty === 'easy'
+                  ? '하'
+                  : activity.difficulty === 'hard'
+                    ? '상'
+                    : '중'}
               </span>
             </div>
             <div className="section">
@@ -289,14 +325,15 @@ export function ActivityDetailPage({
                 </button>
               </div>
             </div>
-            <p>오늘의 날씨를 관찰하고 말로 표현할 수 있어요.</p>
-            <h3>발달 영역</h3>
+            <p>{activity.description || '설명이 준비되지 않았어요.'}</p>
+            <h3>카테고리</h3>
             <div className="chips">
-              <span className="chip">자연탐구</span>
-              <span className="chip">의사소통</span>
+              {(activity.categoryNames || [activity.category]).map((name) => (
+                <span className="chip" key={name}>
+                  {name}
+                </span>
+              ))}
             </div>
-            <h3>준비물</h3>
-            <p>연필, 지우개, 색연필, 사인펜</p>
             <div className="section-heading">
               <h3>활동 미리보기</h3>
               <Link className="text-link" to={`/viewer/${activity.id}`}>
@@ -311,32 +348,6 @@ export function ActivityDetailPage({
               <span />
               <span />
             </Link>
-            <h3>엄마아빠 가이드</h3>
-            <p>
-              1. 오늘의 날씨를 관찰해요.
-              <br />
-              2. 날씨에 대해 이야기 나누면서 내 마음도 떠올려요.
-              <br />
-              3. 빈칸에 오늘의 날짜를 적어요.
-              <br />
-              4. 오늘의 날씨를 그리고 색칠하면 완성!
-            </p>
-            <div className="section-heading">
-              <h3>리뷰 2개</h3>
-              <Link
-                className="text-link"
-                to={`/activities/${activity.id}/reviews`}
-              >
-                전체보기 <Icon name="chevron" size={16} />
-              </Link>
-            </div>
-            <div className="section" data-demo-content="figma-review">
-              <div className="section-heading">
-                <strong>도영이네</strong>
-                <small>★★★★★</small>
-              </div>
-              <p>아이가 정말 좋아했어요. 날씨를 매일 관찰하게 됐어요.</p>
-            </div>
             <div className="section-heading">
               <h3>이런 활동지는 어때요</h3>
               <Link className="text-link" to="/activities">
@@ -383,18 +394,9 @@ export function ActivityDetailPage({
               </button>
               <button
                 className="button button--primary"
-                onClick={() =>
-                  user
-                    ? navigate('/checkout', {
-                        state: {
-                          activityIds: [activity.id],
-                          total: activity.price,
-                        },
-                      })
-                    : navigate('/login')
-                }
+                onClick={() => navigate(`/viewer/${activity.id}`)}
               >
-                바로 구매
+                무료 활동지 보기
               </button>
             </div>
           </div>
@@ -402,7 +404,9 @@ export function ActivityDetailPage({
       ) : (
         <div className="screen-content screen-content--center">
           <div className="empty-circle" />
-          <h2>활동지를 찾을 수 없어요</h2>
+          <h2>
+            {loading ? '불러오는 중…' : loadError || '활동지를 찾을 수 없어요'}
+          </h2>
         </div>
       )}
       {message && (

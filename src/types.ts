@@ -6,7 +6,17 @@ export interface Activity {
   category: string;
   price: number;
   duration: number;
-  difficulty: 'easy' | 'normal';
+  difficulty: 'easy' | 'normal' | 'hard';
+  categoryIds?: number[];
+  categoryNames?: string[];
+  description?: string;
+  ageMinMonths?: number;
+  ageMaxMonths?: number;
+  durationMin?: number;
+  durationMax?: number;
+  pdf?: string;
+  materials?: string[];
+  developmentDomains?: string[];
   ageYears: number;
   thumbnail?: string;
   location?: string;

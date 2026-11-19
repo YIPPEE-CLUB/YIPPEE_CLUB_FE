@@ -7,6 +7,8 @@ interface ActivityCardProps {
   saved: boolean;
   onToggle: (id: number) => void;
   showSave?: boolean;
+  selected?: boolean;
+  onSelect?: (id: number) => void;
 }
 
 export function ActivityCard({
@@ -14,12 +16,13 @@ export function ActivityCard({
   saved,
   onToggle,
   showSave = true,
+  selected = false,
+  onSelect,
 }: ActivityCardProps) {
   return (
     <article
       className={`activity-card ${activity.location ? 'activity-card--experience' : ''}`}
     >
-      {/* Figma 원본처럼 회색 이미지 자리표시자를 유지합니다. */}
       <Link
         className="activity-card__thumbnail"
         to={`/activities/${activity.id}`}
@@ -27,7 +30,18 @@ export function ActivityCard({
       >
         {activity.thumbnail && <img src={activity.thumbnail} alt="" />}
       </Link>
-      {showSave && !activity.location && (
+      {onSelect && (
+        <label className="activity-card__select">
+          <input
+            type="checkbox"
+            aria-label={`${activity.title} 선택`}
+            checked={selected}
+            onChange={() => onSelect(activity.id)}
+          />
+          <span aria-hidden="true">✓</span>
+        </label>
+      )}
+      {showSave && (
         <button
           className="activity-card__save"
           type="button"
@@ -41,14 +55,18 @@ export function ActivityCard({
       <span className={`tag ${activity.location ? 'tag--location' : ''}`}>
         {activity.location ||
           (activity.duration
-            ? `${activity.duration === 10 ? '5-10' : activity.duration}분`
+            ? activity.durationMin !== undefined
+              ? `${activity.durationMin}–${activity.durationMax}분`
+              : `${activity.duration}분`
             : '시간 미정')}
       </span>
       <Link className="activity-card__title" to={`/activities/${activity.id}`}>
         <span>[{activity.subtitle}]</span>
         {activity.title}
       </Link>
-      <strong>{activity.price.toLocaleString('ko-KR')}원</strong>
+      <Link className="activity-card__price" to={`/activities/${activity.id}`}>
+        <strong>{activity.price.toLocaleString('ko-KR')}원</strong>
+      </Link>
     </article>
   );
 }

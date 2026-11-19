@@ -48,14 +48,22 @@
   justify-content: center;
   gap: 12px;
   border-radius: 15px;
-  background: rgb(255 193 0 / 30%);
-  color: #747474;
+  background: #ffc100;
+  color: #332600;
   font-size: 16px;
   pointer-events: none;
-  animation: none;
+  animation: login-toast-fade 2s linear forwards;
 }
 .login-toast img {
   flex-shrink: 0;
+}
+@keyframes login-toast-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 @keyframes toast-appear {
   from {
@@ -794,13 +802,19 @@
 }
 .reference-results__actions {
   display: flex;
-  gap: 40px;
-  padding: 24px 28px 44px;
+  gap: 28px;
+  padding: 24px 24px 32px;
   margin-top: auto;
 }
 .reference-results__actions .button {
   flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
   font-size: 14px;
+  white-space: nowrap;
 }
 .reference-results__actions .button:first-child {
   background: #bdbdbd;
@@ -842,7 +856,35 @@
   display: flex;
   gap: 16px;
   overflow-x: auto;
-  scrollbar-width: none;
+  min-width: 0;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5da transparent;
+  overscroll-behavior-x: contain;
+}
+.category-scroller {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+.category-scroller .experience-categories {
+  flex: 1;
+}
+.category-scroll-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 40px;
+  margin-bottom: 14px;
+  padding: 0;
+  line-height: 1;
+  border-radius: 12px;
+  background: #f5f6f8;
+  color: #626975;
+  font-size: 24px;
 }
 .experience-categories button {
   display: flex;
@@ -895,4 +937,510 @@
   .login-toast {
     animation: none;
   }
+}
+/* Catalog interaction controls stay separate from the card detail links. */
+.activity-catalog {
+  overflow: visible;
+  padding-bottom: 100px;
+}
+.activity-catalog .search-field input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+.activity-card__select,
+.activity-card__save {
+  position: absolute;
+  top: 10px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(80, 80, 80, 0.24);
+  box-shadow: none;
+  color: #fff;
+}
+.activity-card__select {
+  left: 10px;
+  cursor: pointer;
+}
+.activity-card__select input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.activity-card__select span {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  text-align: center;
+  line-height: 20px;
+  color: transparent;
+}
+.activity-card__select:has(input:checked) span {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: white;
+  color: white;
+}
+.activity-card__select:has(input:focus-visible) {
+  outline: 3px solid #3972df;
+  outline-offset: 3px;
+}
+.activity-card__save {
+  right: 10px;
+}
+.activity-card__price {
+  display: block;
+}
+.activity-catalog .catalog-pagination {
+  align-items: center;
+}
+.catalog-pagination button {
+  width: auto;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+.catalog-pagination button:disabled {
+  opacity: 0.35;
+}
+.experience-categories button[aria-pressed='true'] {
+  font-weight: 700;
+}
+.catalog-selection-bar {
+  position: sticky;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 2px 16px #0002;
+}
+.catalog-selection-bar .button {
+  flex: 1;
+  min-height: 40px;
+}
+.recommendation-context {
+  color: #666;
+  font-size: 13px;
+}
+.oneclick-modal--filters {
+  width: min(360px, calc(100vw - 32px));
+  height: min(640px, 82dvh);
+  max-height: calc(100dvh - 32px);
+  background: #fff;
+  align-items: stretch;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 24px;
+  overflow: hidden;
+}
+.oneclick-modal--filters::backdrop {
+  background: rgb(0 0 0 / 35%);
+}
+.finder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.finder-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.finder-header .oneclick-modal__close {
+  color: #fff;
+  background: #222;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  flex: 0 0 34px;
+  overflow: hidden;
+}
+.finder-close-glyph {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+.finder-close-glyph::before,
+.finder-close-glyph::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: -1px;
+  width: 2px;
+  height: 18px;
+  background: currentColor;
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+.finder-close-glyph::after {
+  transform: rotate(-45deg);
+}
+.finder-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.finder-fields {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 8px 16px 0;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  overflow-x: hidden;
+}
+.finder-fields > * {
+  flex-shrink: 0;
+}
+.finder-fields .wire-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+.finder-fields .wire-field input,
+.finder-fields .wire-field select {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 400;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: white;
+}
+.finder-fields > p {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+}
+.finder-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.finder-fieldset legend {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.finder-fieldset .chips {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+.finder-fieldset .chip {
+  font-size: 12px;
+  min-height: 34px;
+  padding: 6px 12px;
+}
+.finder-fieldset .chip.is-selected {
+  background: #fff0b2;
+  border-color: #d9a900;
+  color: #332600;
+}
+.finder-fields select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: white;
+  width: 100%;
+}
+.finder-submit {
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  flex-shrink: 0;
+}
+.finder-submit .button {
+  width: 100%;
+  min-height: 44px;
+  height: 44px;
+  font-size: 15px;
+  padding: 0 12px;
+}
+.activity-catalog {
+  gap: 14px;
+}
+.activity-catalog .filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.activity-catalog .filters .filter-chip {
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.activity-catalog .filters .filter-chip .icon {
+  flex-shrink: 0;
+}
+
+.child-fan-dialog {
+  --child-wheel-radius: min(140px, calc((100vw - 16px) * 0.388889));
+  position: fixed;
+  inset: auto auto 0 50%;
+  transform: translateX(-50%);
+  width: min(402px, 100vw);
+  max-width: 100vw;
+  height: 280px;
+  max-height: 90dvh;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  box-shadow: none;
+}
+.child-fan-dialog::backdrop {
+  background: rgb(24 29 39 / 24%);
+  backdrop-filter: blur(3px);
+}
+.child-fan-wheel {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, calc(100vw - 16px));
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 -4px 18px #20283612);
+  pointer-events: none;
+  transform-origin: bottom center;
+  animation: child-fan-surface 220ms ease-out both;
+}
+.child-fan-heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.child-fan-options {
+  position: absolute;
+  inset: 0;
+}
+.child-fan-item {
+  position: absolute;
+  width: 68px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transform: translate(-50%, 50%);
+  color: #505767;
+  text-align: center;
+  animation: child-fan-open 220ms ease-out both;
+}
+.child-fan-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f3f5f8;
+  color: #737d8c;
+  border: 1px solid #e8ebf0;
+}
+.child-fan-item.is-selected {
+  color: #70521b;
+}
+.child-fan-item.is-selected .child-fan-avatar {
+  background: linear-gradient(145deg, #ffdc6b, #ffc632);
+  border-color: #f5c442;
+  box-shadow: 0 3px 8px #c9950020;
+}
+.child-fan-check {
+  position: absolute;
+  right: -2px;
+  bottom: -1px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6c562d;
+  border: 2px solid #fff4d5;
+  display: grid;
+  place-items: center;
+}
+.child-fan-check .icon,
+.child-fan-close .icon {
+  display: none;
+}
+.child-fan-check::after {
+  content: '';
+  width: 6px;
+  height: 3px;
+  border-left: 1.5px solid white;
+  border-bottom: 1.5px solid white;
+  transform: rotate(-45deg);
+  margin-top: -2px;
+}
+.child-fan-item strong {
+  display: block;
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.child-fan-item small {
+  display: none;
+}
+.child-fan-item:disabled {
+  opacity: 0.5;
+}
+.child-fan-item:focus-visible {
+  outline: 2px solid #c39425;
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+.child-fan-add .child-fan-avatar {
+  background: #fff;
+  border: 1px solid #e1e5eb;
+}
+.child-fan-add .icon--plus img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.child-fan-close {
+  position: absolute;
+  left: 50%;
+  bottom: calc(34px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #ffe08a, #ffcf4b);
+  border: 4px solid #fff;
+  box-shadow: 0 3px 14px #34280024;
+}
+.child-fan-close::before,
+.child-fan-close::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: #6c562d;
+  transform: rotate(45deg);
+}
+.child-fan-close::after {
+  transform: rotate(-45deg);
+}
+.child-fan-pages {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  font-size: 11px;
+}
+.child-fan-pages button {
+  min-height: 32px;
+}
+.child-fan-pages button:disabled {
+  opacity: 0.35;
+}
+.child-fan-dialog .form-error {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  background: white;
+  border-radius: 10px;
+  padding: 8px;
+  z-index: 2;
+}
+@keyframes child-fan-open {
+  from {
+    opacity: 0;
+    translate: 0 30px;
+    scale: 0.9;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+@keyframes child-fan-surface {
+  from {
+    opacity: 0;
+    scale: 0.85;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .child-fan-wheel,
+  .child-fan-item {
+    animation: none;
+  }
+}
+
+.child-fan-avatar > .icon {
+  width: 28px !important;
+  height: 28px !important;
+}
+.child-fan-avatar > .icon img {
+  max-width: 28px;
+  max-height: 28px;
+  object-fit: contain;
+}
+.child-fan-add .child-fan-avatar {
+  border: 0;
+  background: transparent;
+}
+.child-fan-item strong {
+  font-size: 11px;
+}
+/* Match the visual scale of the header notification and shopping icons. */
+.icon--bell,
+.icon--cart {
+  width: 32px !important;
+  height: 32px !important;
+}
+.icon--bell img,
+.icon--cart img {
+  display: block;
+  width: auto;
+  height: 28px;
+  max-width: 26px;
+  object-fit: contain;
 }

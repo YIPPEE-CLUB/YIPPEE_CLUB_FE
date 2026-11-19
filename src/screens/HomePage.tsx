@@ -30,7 +30,7 @@ export function TrendingKeywords({
       <h2>실시간 인기 검색어</h2>
       <div className="trending-box">
         <div className="section-heading">
-          <small>오전 9시 업데이트</small>
+          <small>인기 검색어 예시 · 실시간 집계 연동 예정</small>
           {collapsible && (
             <button
               className="text-button"
@@ -252,10 +252,11 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
       </div>
       {params.get('finder') === '1' && (
         <OneClickOverlay
+          activities={activities}
           onClose={() => setParams({})}
-          onFind={() => {
+          onFind={(playFilters) => {
             if (!user) requestLogin();
-            else navigate('/recommendations');
+            else navigate('/recommendations', { state: { playFilters } });
           }}
         />
       )}

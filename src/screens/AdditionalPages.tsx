@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { getActivity } from '../services/activities';
+import type { Activity } from '../types';
+import { useEffect, useState } from 'react';
 import {
   Link,
   useLocation,
@@ -696,101 +698,58 @@ export function RecommendationsPage({
 
 export function ViewerPage() {
   const { activityId } = useParams();
-  const [tab, setTab] = useState('activity');
-  const [zoom, setZoom] = useState(1);
-  const [notice, setNotice] = useState('');
+  const [activity, setActivity] = useState<Activity>();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const controller = new AbortController();
+    setActivity(undefined);
+    setError('');
+    setLoading(true);
+    getActivity(Number(activityId), controller.signal)
+      .then((item) => {
+        if (!controller.signal.aborted) setActivity(item);
+      })
+      .catch((cause: Error) => {
+        if (!controller.signal.aborted) setError(cause.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [activityId]);
   return (
     <div className="screen" data-figma-node="116:731">
-      <ScreenHeader
-        title="활동지 보기"
-        backTo={`/activities/${activityId || 101}`}
-      />
+      <ScreenHeader title="활동지 보기" backTo={`/activities/${activityId}`} />
       <div className="screen-content viewer-content">
-        <div className="tabs">
-          <button
-            className={tab === 'activity' ? 'is-selected' : ''}
-            onClick={() => setTab('activity')}
-          >
-            활동지
-          </button>
-          <button
-            className={tab === 'guide' ? 'is-selected' : ''}
-            onClick={() => setTab('guide')}
-          >
-            활동 가이드
-          </button>
-        </div>
-        <div className="viewer-paper-viewport">
-          <div
-            className="viewer-paper"
-            style={{ transform: `scale(${zoom})` }}
-          />
-        </div>
-        <div className="section-heading viewer-pagination">
-          <span>이전</span>
-          <span>1 / 1</span>
-          <span>다음</span>
-        </div>
-        <div className="viewer-tools">
-          <button
-            className="button square-button"
-            aria-label="축소"
-            onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-          >
-            <Icon name="zoomOut" />
-          </button>
-          <button
-            className="button square-button"
-            aria-label="확대"
-            onClick={() => setZoom(Math.min(2, zoom + 0.1))}
-          >
-            <Icon name="zoomIn" />
-          </button>
-          <button
-            className="button square-button"
-            aria-label="전체화면"
-            onClick={() =>
-              void document
-                .querySelector('.viewer-paper-viewport')
-                ?.requestFullscreen()
-                .catch(() => setNotice('전체화면을 지원하지 않는 환경이에요.'))
-            }
-          >
-            <Icon name="fullscreen" />
-          </button>
-        </div>
-        <div className="viewer-actions">
-          <button
-            onClick={() =>
-              setNotice('구매한 PDF 내려받기 API가 아직 연결되지 않았어요.')
-            }
-          >
-            <span className="button square-button">
-              <Icon name="download" />
-            </span>
-            <small>내려받기</small>
-          </button>
-          <button
-            onClick={() => setNotice('출력할 PDF가 준비되면 인쇄할 수 있어요.')}
-          >
-            <span className="button square-button">
-              <Icon name="print" />
-            </span>
-            <small>인쇄하기</small>
-          </button>
-        </div>
+        {loading && <p role="status">불러오는 중…</p>}
+        {error && <p role="alert">{error}</p>}
+        {activity && (
+          <>
+            <h2>{activity.title}</h2>
+            {activity.thumbnail && (
+              <img
+                src={activity.thumbnail}
+                alt={activity.title}
+                style={{ width: '100%', objectFit: 'contain' }}
+              />
+            )}
+            {activity.pdf ? (
+              <a
+                className="button button--primary"
+                href={activity.pdf}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                PDF 열기 · 내려받기
+              </a>
+            ) : (
+              <p>미리보기 데이터에는 PDF가 없어요.</p>
+            )}
+            <p>PDF를 연 뒤 브라우저의 내려받기·인쇄 기능을 이용해 주세요.</p>
+          </>
+        )}
       </div>
-      {notice && (
-        <WireDialog title="활동지 보기 안내" onClose={() => setNotice('')}>
-          <p>{notice}</p>
-          <button
-            className="button button--primary"
-            onClick={() => setNotice('')}
-          >
-            확인
-          </button>
-        </WireDialog>
-      )}
     </div>
   );
 }

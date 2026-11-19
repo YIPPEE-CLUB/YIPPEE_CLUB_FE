@@ -1,47 +1,214 @@
+import { useChildren } from '../context/ChildrenContext';
+import {
+  filterRecommendations,
+  recommendActivities,
+  type PlayFilters,
+} from '../lib/recommendations';
+import { ActivityCatalog } from '../components/ActivityCatalog';
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Link,
+  useNavigate,
+  useSearchParams,
+  useLocation,
+} from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { ReferenceHeader } from '../components/ReferenceHeader';
 import { WireDialog } from '../components/WireDialog';
 import { ActivityCard } from '../components/ActivityCard';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useAuth } from '../context/AuthContext';
-import { TrendingKeywords, type CatalogProps } from './HomePage';
+import { type CatalogProps } from './HomePage';
 import type { Activity } from '../types';
 
 export function OneClickOverlay({
   onClose,
   onFind,
+  activities = [],
 }: {
   onClose: () => void;
-  onFind: () => void;
+  onFind: (filters: PlayFilters) => void;
+  activities?: Activity[];
 }) {
+  const { user } = useAuth();
+  const { children } = useChildren();
+  const child =
+    children.find((item) => item.id === user?.active_child_id) || children[0];
+  const [filters, setFilters] = useState<PlayFilters>({
+    name: child?.name || '',
+    age: '',
+    materials: [],
+    categories: [],
+    domains: [],
+  });
+  const categories = Array.from(
+    new Set(
+      activities.flatMap((item) => item.categoryNames || [item.category]),
+    ),
+  );
+  function toggle(key: 'materials' | 'categories' | 'domains', value: string) {
+    setFilters((previous) => ({
+      ...previous,
+      [key]: previous[key].includes(value)
+        ? previous[key].filter((item) => item !== value)
+        : [...previous[key], value],
+    }));
+  }
+  function group(
+    key: 'materials' | 'categories' | 'domains',
+    title: string,
+    options: string[],
+  ) {
+    return (
+      <fieldset className="finder-fieldset">
+        <legend>{title}</legend>
+        <div className="chips">
+          {options.map((value) => (
+            <button
+              type="button"
+              className={`chip ${filters[key].includes(value) ? 'is-selected' : ''}`}
+              aria-pressed={filters[key].includes(value)}
+              key={value}
+              onClick={() => toggle(key, value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    );
+  }
   return (
     <WireDialog
       title="원클릭 맞춤형 놀이 찾기"
-      className="oneclick-modal"
+      className="oneclick-modal oneclick-modal--filters"
       onClose={onClose}
     >
-      <button
-        type="button"
-        className="oneclick-modal__close"
-        aria-label="맞춤 놀이 닫기"
-        onClick={onClose}
+      <div className="finder-header">
+        <h2>맞춤형 놀이 찾기</h2>
+        <button
+          type="button"
+          className="oneclick-modal__close"
+          aria-label="맞춤 놀이 닫기"
+          onClick={onClose}
+        >
+          <span className="finder-close-glyph" aria-hidden="true" />
+        </button>
+      </div>
+      <form
+        className="finder-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onFind(filters);
+        }}
       >
-        <img src="/assets/b9fb0.svg" alt="" />
-      </button>
-      <button type="button" className="button button--primary" onClick={onFind}>
-        활동안 찾기
-      </button>
+        <div className="finder-fields">
+          <p>아이에게 맞는 놀이 조건을 골라 주세요.</p>
+          <label className="wire-field">
+            아이 이름
+            <input
+              value={filters.name}
+              maxLength={40}
+              placeholder="이름을 입력해 주세요"
+              onChange={(event) =>
+                setFilters({ ...filters, name: event.target.value })
+              }
+            />
+          </label>
+          <label className="wire-field">
+            아이 나이
+            <select
+              value={filters.age}
+              onChange={(event) =>
+                setFilters({ ...filters, age: event.target.value })
+              }
+            >
+              <option value="">
+                {child ? '등록한 아이 월령 사용' : '전체 나이'}
+              </option>
+              {Array.from({ length: 10 }, (_, age) => (
+                <option value={age} key={age}>
+                  만 {age}세
+                </option>
+              ))}
+            </select>
+          </label>
+          {group('materials', '가지고 있는 준비물', [
+            '연필',
+            '지우개',
+            '색연필',
+            '사인펜',
+            '가위',
+            '풀',
+            '색종이',
+            '클레이',
+          ])}
+          {group(
+            'categories',
+            '관심 카테고리',
+            categories.length
+              ? categories
+              : [
+                  '그림/색칠',
+                  '만들기',
+                  '한글',
+                  '숫자',
+                  '역할',
+                  '영어',
+                  '음악',
+                  '체육',
+                ],
+          )}
+          {group('domains', '원하는 발달 영역', [
+            '신체운동·건강',
+            '의사소통',
+            '사회관계',
+            '예술경험',
+            '자연탐구',
+          ])}
+          <button
+            type="button"
+            className="text-button"
+            onClick={() =>
+              setFilters({
+                name: '',
+                age: '',
+                materials: [],
+                categories: [],
+                domains: [],
+              })
+            }
+          >
+            조건 초기화
+          </button>
+        </div>
+        <div className="finder-submit">
+          <button type="submit" className="button button--primary">
+            활동안 찾기
+          </button>
+        </div>
+      </form>
     </WireDialog>
   );
 }
 
 export function ReferenceRecommendationsPage(props: CatalogProps) {
   const navigate = useNavigate();
-  const { user, requestLogin } = useAuth();
-  const items = props.activities.filter((item) => item.location).slice(0, 2);
-  const [notice, setNotice] = useState(false);
+  const { user } = useAuth();
+  const { children } = useChildren();
+  const child =
+    children.find((item) => item.id === user?.active_child_id) || children[0];
+  const { state } = useLocation();
+  const filters = state?.playFilters as PlayFilters | undefined;
+  const items = filters
+    ? filterRecommendations(
+        filters.age
+          ? props.activities
+          : recommendActivities(props.activities, child),
+        filters,
+      ).slice(0, 20)
+    : recommendActivities(props.activities, child);
+  const [selected, setSelected] = useState<number[]>([]);
   return (
     <div className="reference-results" data-figma-node="86:2932">
       <div className="screen-content">
@@ -49,13 +216,34 @@ export function ReferenceRecommendationsPage(props: CatalogProps) {
         <p>
           바로시작할 수 있는 놀이활동 <strong>{items.length}개</strong> 있어요
         </p>
+        <p className="recommendation-context">
+          {filters
+            ? `${filters.name || child?.name || '아이'}의 선택한 조건으로 골랐어요.`
+            : child
+              ? `${child.name}의 월령과 관심사를 기준으로 골랐어요.`
+              : '아이를 등록하면 월령과 관심사에 맞춰 골라드려요.'}
+        </p>
+        {filters &&
+          (filters.materials.length > 0 || filters.domains.length > 0) && (
+            <p className="recommendation-context">
+              준비물·발달 영역 정보가 등록된 활동안만 해당 조건에 표시됩니다.
+            </p>
+          )}
         <div className="activity-grid">
           {items.map((activity) => (
             <ActivityCard
               key={activity.id}
               activity={activity}
-              saved={false}
+              saved={props.savedIds.includes(activity.id)}
               onToggle={props.onToggle}
+              selected={selected.includes(activity.id)}
+              onSelect={(id) =>
+                setSelected((ids) =>
+                  ids.includes(id)
+                    ? ids.filter((value) => value !== id)
+                    : [...ids, id],
+                )
+              }
             />
           ))}
         </div>
@@ -72,23 +260,14 @@ export function ReferenceRecommendationsPage(props: CatalogProps) {
         <button
           type="button"
           className="button button--primary"
-          onClick={() => (user ? setNotice(true) : requestLogin())}
+          disabled={!selected.length}
+          onClick={() =>
+            navigate('/checkout', { state: { activityIds: selected } })
+          }
         >
           원클릭 결제
         </button>
       </div>
-      {notice && (
-        <WireDialog title="결제 안내" onClose={() => setNotice(false)}>
-          <p>결제 기능을 준비 중이에요.</p>
-          <button
-            type="button"
-            className="button button--accent"
-            onClick={() => setNotice(false)}
-          >
-            확인
-          </button>
-        </WireDialog>
-      )}
     </div>
   );
 }
@@ -293,7 +472,7 @@ export function ReferenceActivityTypesPage() {
           className="button button--accent"
           to={`/activities?category=${encodeURIComponent(category)}`}
         >
-          돌봄 신청하기
+          활동 찾기
         </Link>
       </div>
     </div>
@@ -331,176 +510,5 @@ export function ReferenceAccountInfoPage({
 export function ReferenceCatalogPage(
   props: CatalogProps & { items: Activity[] },
 ) {
-  const navigate = useNavigate();
-  const { user, requestLogin } = useAuth();
-  const [category, setCategory] = useState('전체');
-  const [filters, setFilters] = useState({ region: '', age: '', schedule: '' });
-  const [sheet, setSheet] = useState<'region' | 'age' | 'schedule' | null>(
-    null,
-  );
-  const [draft, setDraft] = useState('');
-  const [finder, setFinder] = useState(false);
-  const [page, setPage] = useState(1);
-  const choices = {
-    region: ['전체', '서울 중부', '서울 북부'],
-    age: [
-      '전체',
-      '만 1세',
-      '만 2세',
-      '만 3세',
-      '만 4세',
-      '만 5세',
-      '만 6세',
-      '만 7세',
-      '만 8세',
-      '만 9세',
-    ],
-    schedule: ['전체', '평일', '주말'],
-  };
-  const labels = { region: '지역', age: '아이 나이', schedule: '일정' };
-  const items = props.items.filter(
-    (item) =>
-      (category === '전체' ||
-        category === '프리미엄' ||
-        item.category === category) &&
-      (!filters.region ||
-        filters.region === '전체' ||
-        item.location === filters.region) &&
-      (!filters.age ||
-        filters.age === '전체' ||
-        item.ageYears === Number(filters.age.replace(/\D/g, ''))) &&
-      filters.schedule !== '평일',
-  );
-  return (
-    <div className="page-content reference-catalog" data-figma-node="86:2370">
-      <h1>활동찾기</h1>
-      <Link className="search-field search-entry" to="/search">
-        <span>놀이 키워드를 입력해보세요.(자동차, 공룡)</span>
-        <Icon name="search" />
-      </Link>
-      <div className="experience-categories">
-        {[
-          ['🪐', '전체'],
-          ['⭐', '프리미엄'],
-          ['🚀', '과학'],
-          ['👴', '역사'],
-        ].map(([emoji, label]) => (
-          <button
-            key={label}
-            type="button"
-            aria-pressed={category === label}
-            onClick={() => {
-              setCategory(label);
-              setPage(1);
-            }}
-          >
-            <span>{emoji}</span>
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="filters">
-        {(['region', 'age', 'schedule'] as const).map((key) => (
-          <button
-            className="filter-chip"
-            key={key}
-            type="button"
-            onClick={() => {
-              setSheet(key);
-              setDraft(filters[key]);
-            }}
-          >
-            <svg
-              aria-hidden="true"
-              width="14"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            {filters[key] || labels[key]} <Icon name="down" size={16} />
-          </button>
-        ))}
-      </div>
-      <div className="activity-grid">
-        {[...items, ...items].map((activity, index) => (
-          <ActivityCard
-            key={`${activity.id}-${index}-${page}`}
-            activity={activity}
-            saved={false}
-            onToggle={props.onToggle}
-          />
-        ))}
-      </div>
-      {!items.length && (
-        <p className="wire-empty">조건에 맞는 활동지가 없어요.</p>
-      )}
-      <div className="catalog-pagination">
-        {[1, 2, 3].map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-current={page === value ? 'page' : undefined}
-            onClick={() => setPage(value)}
-          >
-            {value}
-          </button>
-        ))}
-      </div>
-      <TrendingKeywords />
-      <button
-        type="button"
-        className="button button--primary"
-        onClick={() => (user ? setFinder(true) : requestLogin())}
-      >
-        원클릭 맞춤형 놀이 찾기
-      </button>
-      {sheet && (
-        <WireDialog title={labels[sheet]} sheet onClose={() => setSheet(null)}>
-          <h2>{labels[sheet]}</h2>
-          <div className="chips">
-            {choices[sheet].map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`chip ${draft === value ? 'is-selected' : ''}`}
-                onClick={() => setDraft(value)}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
-          <div className="dialog-actions">
-            <button
-              type="button"
-              className="button"
-              onClick={() => setDraft('')}
-            >
-              초기화
-            </button>
-            <button
-              type="button"
-              className="button button--accent"
-              onClick={() => {
-                setFilters({ ...filters, [sheet]: draft });
-                setSheet(null);
-              }}
-            >
-              적용하기
-            </button>
-          </div>
-        </WireDialog>
-      )}
-      {finder && (
-        <OneClickOverlay
-          onClose={() => setFinder(false)}
-          onFind={() => navigate('/recommendations')}
-        />
-      )}
-    </div>
-  );
+  return <ActivityCatalog {...props} activities={props.items} />;
 }
