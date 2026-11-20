@@ -11,3 +11,8 @@ work/
 !.env.example
 .DS_Store
 Thumbs.db
+
+# Cloudflare (OpenNext·Wrangler)
+.open-next/
+.wrangler/
+.dev.vars*
