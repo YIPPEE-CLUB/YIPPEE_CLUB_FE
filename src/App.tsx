@@ -25,6 +25,7 @@ import type { Activity } from './types';
 import { useAuth } from './context/AuthContext';
 import { apiRequest } from './lib/api';
 import type { Paginated } from './types';
+import { PasswordResetPage } from './screens/PasswordResetPage';
 import { AuthPage } from './screens/AuthPage';
 import { SearchPage } from './screens/SearchPage';
 import {
@@ -58,7 +59,7 @@ import {
 } from './screens/AdditionalPages';
 
 export function App() {
-  const { user, ready, requestLogin } = useAuth();
+  const { user, ready, requestLogin, isPreview } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,7 +90,7 @@ export function App() {
       });
 
     return () => controller.abort();
-  }, [attempt]);
+  }, [attempt, isPreview]);
 
   const [saving, setSaving] = useState(false);
   useEffect(() => {
@@ -268,10 +269,7 @@ export function App() {
             path="settings/phone"
             element={<AccountFormPage kind="phone" />}
           />
-          <Route
-            path="password/reset"
-            element={<AccountFormPage kind="reset" />}
-          />
+          <Route path="password/reset" element={<PasswordResetPage />} />
           <Route
             path="system/network"
             element={<EmptyScreen kind="network" />}

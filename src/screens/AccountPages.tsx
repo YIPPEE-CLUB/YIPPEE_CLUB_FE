@@ -8,26 +8,18 @@ import type { CatalogProps } from './HomePage';
 import { useAuth } from '../context/AuthContext';
 import { useChildren } from '../context/ChildrenContext';
 import { apiRequest } from '../lib/api';
-import type { Activity, Paginated } from '../types';
 import { LoginPrompt } from './ConnectedPages';
 
 export function SavedPage({ activities, savedIds, onToggle }: CatalogProps) {
   const { user } = useAuth();
   const [tab, setTab] = useState('favorites');
   const [editing, setEditing] = useState(false);
-  const [purchases, setPurchases] = useState<Activity[]>([]);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<number[]>([]);
   const [removeConfirm, setRemoveConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const saved = activities.filter((activity) => savedIds.includes(activity.id));
-  useEffect(() => {
-    if (user && tab === 'purchases')
-      apiRequest<Paginated<Activity>>('/purchases/activities?page_size=100')
-        .then((page) => setPurchases(page.results))
-        .catch((cause: Error) => setError(cause.message));
-  }, [user?.id, tab]);
-  const items = tab === 'favorites' ? saved : purchases;
+  const items = tab === 'favorites' ? saved : [];
   return (
     <div
       className={`page-content ${editing ? 'saved-page--editing' : ''}`}
@@ -133,12 +125,12 @@ export function SavedPage({ activities, savedIds, onToggle }: CatalogProps) {
           <h2>
             {tab === 'favorites'
               ? '저장한 활동지가 없어요'
-              : '구매한 활동지가 없어요'}
+              : '모든 활동지는 무료예요'}
           </h2>
           <p>
             {tab === 'favorites'
               ? '마음에 드는 활동지의 하트를 눌러보세요.'
-              : '구매한 활동지가 여기에 표시돼요.'}
+              : '활동찾기에서 활동지를 바로 열어 이용해 주세요.'}
           </p>
         </div>
       )}

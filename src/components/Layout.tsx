@@ -21,6 +21,22 @@ const navigation: { path: string; label: string; icon: IconName }[] = [
   { path: '/profile', label: '내 정보', icon: 'profile' },
 ];
 
+function fanPosition(index: number, count: number) {
+  const angle = Math.PI - ((index + 0.5) * Math.PI) / count;
+  return {
+    left: `calc(50% + ${Math.cos(angle)} * var(--child-wheel-radius))`,
+    bottom: `calc(60px + ${Math.sin(angle)} * var(--child-wheel-radius))`,
+    animationDelay: `${index * 35}ms`,
+  };
+}
+function fanSector(index: number, count: number) {
+  const start = Math.PI - (index * Math.PI) / count;
+  const end = Math.PI - ((index + 1) * Math.PI) / count;
+  const point = (radius: number, angle: number) =>
+    `${180 + radius * Math.cos(angle)},${180 - radius * Math.sin(angle)}`;
+  return `M${point(172, start)} A172,172 0 0,1 ${point(172, end)} L${point(108, end)} A108,108 0 0,0 ${point(108, start)} Z`;
+}
+
 export function Layout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -34,6 +50,7 @@ export function Layout() {
   } = useAuth();
   const { children } = useChildren();
   const [switching, setSwitching] = useState(false);
+  const [childPage, setChildPage] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const activeChild = children.find(
@@ -72,10 +89,13 @@ export function Layout() {
                 key={path}
                 className="nav-item nav-item--child"
                 aria-label="아이 전환"
+                aria-expanded={switching}
+                aria-haspopup="dialog"
                 onClick={() => {
                   if (!user) requestLogin();
                   else {
                     setError('');
+                    setChildPage(0);
                     setSwitching(true);
                   }
                 }}
@@ -111,56 +131,119 @@ export function Layout() {
         </nav>
       )}
       {switching && (
-        <WireDialog title="아이 전환" sheet onClose={() => setSwitching(false)}>
-          <div className="section-heading">
-            <h2>어떤 아이와 놀까요?</h2>
-            <button
-              className="icon-button"
-              aria-label="아이 전환 닫기"
-              onClick={() => setSwitching(false)}
-            >
-              <Icon name="close" />
-            </button>
-          </div>
+        <WireDialog
+          title="아이 전환"
+          className="child-fan-dialog"
+          onClose={() => setSwitching(false)}
+        >
+          <h2 className="child-fan-heading">어떤 아이와 놀까요?</h2>
           {error && (
             <p className="form-error" role="alert">
               {error}
             </p>
           )}
-          {children.map((child) => (
-            <button
-              className="child-switch-row"
-              key={child.id}
-              disabled={busy}
-              onClick={() => {
-                setBusy(true);
-                void apiRequest('/users/me/active-child', {
-                  method: 'PUT',
-                  body: JSON.stringify({ child_id: child.id }),
-                })
-                  .then(reload)
-                  .then(() => setSwitching(false))
-                  .catch((cause: Error) => setError(cause.message))
-                  .finally(() => setBusy(false));
-              }}
+          <svg
+            className="child-fan-wheel"
+            viewBox="0 0 360 180"
+            aria-hidden="true"
+          >
+            {Array.from(
+              { length: Math.min(3, children.length - childPage * 3) + 1 },
+              (_, index) => {
+                const count = Math.min(3, children.length - childPage * 3) + 1;
+                const selected =
+                  children[childPage * 3 + index]?.id === activeChild?.id &&
+                  index < count - 1;
+                return (
+                  <path
+                    key={index}
+                    d={fanSector(index, count)}
+                    fill={selected ? '#ffe6a0' : '#f9fafb'}
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
+                );
+              },
+            )}
+          </svg>
+          <div className="child-fan-options">
+            {children
+              .slice(childPage * 3, childPage * 3 + 3)
+              .map((child, index, shown) => (
+                <button
+                  className={`child-fan-item ${activeChild?.id === child.id ? 'is-selected' : ''}`}
+                  style={fanPosition(index, shown.length + 1)}
+                  aria-pressed={activeChild?.id === child.id}
+                  title={`${child.name} · ${childAgeLabel(child.birth_date)}`}
+                  key={child.id}
+                  disabled={busy}
+                  onClick={() => {
+                    setBusy(true);
+                    void apiRequest('/users/me/active-child', {
+                      method: 'PUT',
+                      body: JSON.stringify({ child_id: child.id }),
+                    })
+                      .then(reload)
+                      .then(() => setSwitching(false))
+                      .catch((cause: Error) => setError(cause.message))
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  <span className="child-fan-avatar">
+                    <Icon name="child" size={34} />
+                    {activeChild?.id === child.id && (
+                      <span className="child-fan-check">
+                        <Icon name="check" size={12} />
+                      </span>
+                    )}
+                  </span>
+                  <span>
+                    <strong>{child.name}</strong>
+                    <small>{childAgeLabel(child.birth_date)}</small>
+                  </span>
+                </button>
+              ))}
+            <Link
+              className="child-fan-item child-fan-add"
+              style={fanPosition(
+                Math.min(3, children.length - childPage * 3),
+                Math.min(3, children.length - childPage * 3) + 1,
+              )}
+              to="/children/new"
+              onClick={() => setSwitching(false)}
             >
-              <span className="child-switch-avatar" />
-              <span>
-                <strong>{child.name}</strong>
-                <small>{childAgeLabel(child.birth_date)}</small>
+              <span className="child-fan-avatar">
+                <Icon name="plus" size={28} />
               </span>
-              {activeChild?.id === child.id && <Icon name="check" />}
-            </button>
-          ))}
-          <Link
-            className="child-switch-row"
-            to="/children/new"
+              <strong>아이 추가</strong>
+            </Link>
+          </div>
+          {children.length > 3 && (
+            <div className="child-fan-pages">
+              <button
+                disabled={childPage === 0 || busy}
+                onClick={() => setChildPage((value) => value - 1)}
+              >
+                이전
+              </button>
+              <span>
+                {childPage + 1} / {Math.ceil(children.length / 3)}
+              </span>
+              <button
+                disabled={(childPage + 1) * 3 >= children.length || busy}
+                onClick={() => setChildPage((value) => value + 1)}
+              >
+                다음
+              </button>
+            </div>
+          )}
+          <button
+            className="child-fan-close"
+            aria-label="아이 전환 닫기"
             onClick={() => setSwitching(false)}
           >
-            <span className="child-switch-avatar" />
-            <strong>아이 추가</strong>
-            <Icon name="plus" />
-          </Link>
+            <Icon name="close" size={28} />
+          </button>
         </WireDialog>
       )}
       {loginPromptOpen && (

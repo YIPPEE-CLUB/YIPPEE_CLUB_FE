@@ -7,6 +7,7 @@ export interface Filters {
   age: string;
   duration: string;
   difficulty: string;
+  domain: string;
   price: string;
   sort: string;
 }
@@ -14,16 +15,19 @@ export const defaultFilters: Filters = {
   age: '',
   duration: '',
   difficulty: '',
+  domain: '',
   price: '',
-  sort: 'popular',
+  sort: 'latest',
 };
 const sortLabels: Record<string, string> = {
-  popular: '인기순',
   latest: '최신순',
   price_asc: '낮은 가격순',
   price_desc: '높은 가격순',
 };
 const choices: Record<string, [string, string][]> = {
+  domain: ['신체운동·건강', '의사소통', '사회관계', '예술경험', '자연탐구'].map(
+    (name) => [name, name],
+  ),
   age: [1, 2, 3, 4, 5].map((age) => [String(age), `만 ${age}세`]),
   duration: [
     ['5-10', '5-10분'],
@@ -32,7 +36,6 @@ const choices: Record<string, [string, string][]> = {
   ],
   difficulty: [
     ['easy', '하'],
-    ['normal', '중'],
     ['hard', '상'],
   ],
   price: [
@@ -45,6 +48,7 @@ const titles: Record<string, string> = {
   age: '아이 나이',
   duration: '소요시간',
   difficulty: '난이도',
+  domain: '발달영역',
   price: '가격',
   sort: '정렬',
 };
@@ -59,15 +63,27 @@ export function filterActivities(
     .filter((item) => {
       return (
         `${item.title} ${item.subtitle}`.includes(query) &&
-        (category === '전체' || item.category === category) &&
-        (!filters.age || item.ageYears === Number(filters.age)) &&
+        (category === '전체' ||
+          (item.categoryNames || [item.category]).includes(category)) &&
+        (!filters.age ||
+          (item.ageMinMonths !== undefined && item.ageMaxMonths !== undefined
+            ? item.ageMinMonths <= Number(filters.age) * 12 + 11 &&
+              item.ageMaxMonths >= Number(filters.age) * 12
+            : item.ageYears === Number(filters.age))) &&
         (!filters.duration ||
-          (filters.duration === '5-10'
-            ? item.duration <= 10
-            : filters.duration === '10-20'
-              ? item.duration > 10 && item.duration <= 20
-              : item.duration > 20)) &&
+          (() => {
+            const [low, high] =
+              filters.duration === '20-plus'
+                ? [20, 65535]
+                : filters.duration.split('-').map(Number);
+            return (
+              (item.durationMin ?? item.duration) <= high &&
+              (item.durationMax ?? item.duration) >= low
+            );
+          })()) &&
         (!filters.difficulty || item.difficulty === filters.difficulty) &&
+        (!filters.domain ||
+          !!item.developmentDomains?.includes(filters.domain)) &&
         (!filters.price || item.price <= Number(filters.price))
       );
     })
@@ -76,9 +92,7 @@ export function filterActivities(
         ? a.price - b.price
         : filters.sort === 'price_desc'
           ? b.price - a.price
-          : filters.sort === 'latest'
-            ? b.id - a.id
-            : a.id - b.id,
+          : 0,
     );
 }
 
@@ -98,7 +112,7 @@ export function CatalogFilters({
   const keys: (keyof Filters)[] = [
     'age',
     'duration',
-    search ? 'price' : 'difficulty',
+    search ? 'price' : 'domain',
   ];
   function show(key: keyof Filters) {
     setDraft(filters[key]);
