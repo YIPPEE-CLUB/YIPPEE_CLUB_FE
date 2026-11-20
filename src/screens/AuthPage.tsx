@@ -1,9 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Icon } from '../components/Icon';
 import { WireDialog } from '../components/WireDialog';
-import { apiRequest, type Tokens } from '../lib/api';
+import {
+  checkEmail,
+  sendSignupCode,
+  confirmSignupCode,
+  login,
+  signup,
+} from '../services/auth';
 import { useAuth } from '../context/AuthContext';
 import { previewLoginEnabled } from '../lib/preview-session';
 
@@ -51,6 +57,15 @@ function PasswordField({
 export function AuthPage() {
   const { establish, previewLogin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestedPath: unknown = location.state?.from;
+  const returnPath =
+    typeof requestedPath === 'string' &&
+    requestedPath.startsWith('/') &&
+    !requestedPath.startsWith('//') &&
+    !requestedPath.startsWith('/login')
+      ? requestedPath
+      : '/';
   const [step, setStep] = useState<Step>('entry');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,52 +90,39 @@ export function AuthPage() {
     return () => window.clearInterval(timer);
   }, [expiresAt]);
   async function issueCode() {
-    const issued = await apiRequest<{
-      verification_id: string;
-      expires_in_seconds: number;
-      dev_code?: string;
-    }>('/auth/verification/send', {
-      method: 'POST',
-      body: JSON.stringify({ identifier: email, purpose: 'signup' }),
-    });
+    const issued = await sendSignupCode(email);
     setVerificationId(issued.verification_id);
     setProof('');
     setExpiresAt(performance.now() + issued.expires_in_seconds * 1000);
-    // 실제 메일 발송이 없는 로컬 서버에서만 개발 코드를 자동 입력합니다.
-    setCode(import.meta.env.DEV && issued.dev_code ? issued.dev_code : '');
+    setCode('');
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (busy || !valid) return;
     setBusy(true);
     setError('');
     try {
       if (step === 'entry') {
         const identifier = email.trim();
         if (/^01\d{8,9}$/.test(identifier.replace(/-/g, ''))) {
-          navigate(`/signup/identity?phone=${identifier.replace(/-/g, '')}`);
-          return;
+          throw new Error(
+            '현재 이메일 가입만 지원해요. 이메일을 입력해 주세요.',
+          );
         }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
-          throw new Error('휴대전화 번호 또는 이메일을 확인해 주세요.');
+          throw new Error('이메일을 확인해 주세요.');
         }
         if (previewLoginEnabled) {
           previewLogin(identifier);
-          navigate('/');
+          navigate(returnPath, { replace: true });
           return;
         }
-        const data = await apiRequest<{ registered: boolean }>(
-          '/auth/identifiers/check',
-          { method: 'POST', body: JSON.stringify({ identifier: email }) },
-        );
+        const data = await checkEmail(identifier);
+        setEmail(identifier.toLowerCase());
         setStep(data.registered ? 'login' : 'terms');
       } else if (step === 'login') {
-        await establish(
-          await apiRequest<Tokens>('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password }),
-          }),
-        );
-        navigate('/');
+        await establish(await login(email, password));
+        navigate(returnPath, { replace: true });
       } else if (step === 'terms') setStep('password');
       else if (step === 'password') {
         if (password !== confirm)
@@ -132,27 +134,11 @@ export function AuthPage() {
       } else if (step === 'verification') {
         let token = proof;
         if (!token) {
-          const verified = await apiRequest<{ verification_token: string }>(
-            '/auth/verification/confirm',
-            {
-              method: 'POST',
-              body: JSON.stringify({ verification_id: verificationId, code }),
-            },
-          );
+          const verified = await confirmSignupCode(verificationId, code);
           token = verified.verification_token;
           setProof(token);
         }
-        await establish(
-          await apiRequest<Tokens>('/auth/signup', {
-            method: 'POST',
-            body: JSON.stringify({
-              identifier: email,
-              password,
-              verification_token: token,
-              agreements: { terms: agreements[0], privacy: agreements[1] },
-            }),
-          }),
-        );
+        await establish(await signup(email, password, token, agreements));
         setStep('complete');
       }
     } catch (cause) {
@@ -169,10 +155,12 @@ export function AuthPage() {
         : step === 'password'
           ? !!password && !!confirm
           : step === 'verification'
-            ? /^\d{6}$/.test(code) && remaining > 0
+            ? !!proof || (/^\d{6}$/.test(code) && remaining > 0)
             : !!password;
   function back() {
+    if (busy) return;
     setError('');
+    setProof('');
     setStep(
       step === 'verification'
         ? 'password'
@@ -231,13 +219,13 @@ export function AuthPage() {
           </div>
           <div className="auth-entry-fields">
             <label className="wire-field">
-              휴대전화 또는 이메일
+              이메일
               <input
-                type="text"
+                type="email"
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="휴대전화 번호 또는 이메일 입력"
+                placeholder="이메일 입력"
                 autoComplete="email"
               />
             </label>

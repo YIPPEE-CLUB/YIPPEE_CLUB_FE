@@ -5,7 +5,7 @@ import type { Child } from '../context/ChildrenContext';
 // 화면 검토 전용 세션. 실제 인증 토큰을 만들거나 백엔드 권한을 부여하지 않습니다.
 export const previewLoginEnabled =
   process.env.NODE_ENV === 'development' &&
-  process.env.NEXT_PUBLIC_ENABLE_PREVIEW_LOGIN !== 'false';
+  process.env.NEXT_PUBLIC_ENABLE_PREVIEW_LOGIN === 'true';
 const key = 'yippee.preview.session';
 interface PreviewSession {
   user: User;

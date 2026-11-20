@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { HomePage } from './screens/HomePage';
 import { ActivitiesPage } from './screens/ActivitiesPage';
@@ -23,7 +23,7 @@ import {
 import { listActivities } from './services/activities';
 import type { Activity } from './types';
 import { useAuth } from './context/AuthContext';
-import { apiRequest } from './lib/api';
+import { apiRequest, readTokens } from './lib/api';
 import type { Paginated } from './types';
 import { PasswordResetPage } from './screens/PasswordResetPage';
 import { AuthPage } from './screens/AuthPage';
@@ -59,14 +59,16 @@ import {
 } from './screens/AdditionalPages';
 
 export function App() {
-  const { user, ready, requestLogin, isPreview } = useAuth();
+  const { user, ready, requestLogin, isPreview, sessionError, reload } =
+    useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   // 로그인한 사용자의 찜은 서버에 저장하며 사용자 변경 시 다시 조회합니다.
   const [savedIds, setSavedIds] = useState<number[]>([]);
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -147,6 +149,34 @@ export function App() {
       </div>
     );
 
+  const privatePath =
+    /^\/(?:children|saved|cart|checkout|profile\/edit|settings\/(?:password|withdraw)|activities\/[^/]+\/(?:record|reviews\/new))(?:\/|$)/.test(
+      pathname,
+    );
+  if (!user && sessionError && readTokens() && privatePath)
+    return (
+      <main className="screen-content" role="alert">
+        <p>{sessionError}</p>
+        <button
+          type="button"
+          onClick={() => {
+            void reload().catch(() => {});
+          }}
+        >
+          다시 시도
+        </button>
+        <a href="/login">로그인하기</a>
+      </main>
+    );
+  if (!user && privatePath)
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: pathname + location.search }}
+      />
+    );
+
   return (
     <>
       {needsCatalog && loading && (
@@ -158,6 +188,19 @@ export function App() {
         <div className="status-banner status-banner--error" role="alert">
           {error}
           <button onClick={() => setAttempt((value) => value + 1)}>
+            다시 시도
+          </button>
+        </div>
+      )}
+      {sessionError && (
+        <div className="info-panel" role="alert">
+          <p>{sessionError}</p>
+          <button
+            type="button"
+            onClick={() => {
+              void reload().catch(() => requestLogin());
+            }}
+          >
             다시 시도
           </button>
         </div>
