@@ -41,3 +41,22 @@ npm run typecheck
 ```
 
 GitHub Actions에서 같은 검증을 수행합니다.
+
+## 배포 (Cloudflare Workers)
+
+[OpenNext Cloudflare 어댑터](https://opennext.js.org/cloudflare)로 Cloudflare Workers에 배포합니다. Worker 이름은 `yippee-club-fe`입니다.
+
+- `wrangler.jsonc`: Worker 이름·호환성 날짜·정적 에셋 설정
+- `open-next.config.ts`: 어댑터 설정. ISR을 쓰지 않아 R2 캐시는 연결하지 않았습니다.
+
+```sh
+npm run preview   # Cloudflare 런타임(workerd)으로 로컬 미리보기
+npm run deploy    # 직접 배포 (wrangler 로그인 필요)
+```
+
+GitHub 연동 시 Cloudflare 대시보드의 Workers Builds 설정은 다음과 같습니다.
+
+- 프로덕션 브랜치: `main`
+- 빌드 명령: `npx opennextjs-cloudflare build`
+- 배포 명령: `npx opennextjs-cloudflare deploy`
+- 환경변수: `.env.example` 참고. `API_PROXY_TARGET`은 운영 백엔드가 준비되면 설정합니다.
