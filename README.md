@@ -33,6 +33,12 @@ npm run dev
 
 ## 검증
 
+### 개발용 가로그인
+
+`npm run dev`에서 `/login`을 열고 이메일을 입력한 뒤 `시작하기`를 누르면 비밀번호 없이 화면 확인용으로 로그인합니다. 샘플 아이 `도영이`를 표시하고, 현재 탭의 새로고침에서도 상태를 유지합니다. 설정에서 로그아웃하면 가로그인이 해제됩니다.
+
+실제 계정·인증 토큰을 생성하지 않습니다. 가로그인 중 API 요청은 로컬 샘플 응답으로 처리하며 실제 서버로 보내지 않습니다. 프로필 편집·아이 전환·찜은 탭 안에서 확인할 수 있고, 지원하지 않는 기능은 안내를 표시합니다. 프로덕션에서는 비활성화되며, 개발 환경에서도 `NEXT_PUBLIC_ENABLE_PREVIEW_LOGIN=false`로 기존 인증 흐름을 사용할 수 있습니다.
+
 ```sh
 npm run format:check
 npm test
@@ -60,3 +66,40 @@ GitHub 연동 시 Cloudflare 대시보드의 Workers Builds 설정은 다음과 
 - 빌드 명령: `npx opennextjs-cloudflare build`
 - 배포 명령: `npx opennextjs-cloudflare deploy`
 - 환경변수: `.env.example` 참고. `API_PROXY_TARGET`은 운영 백엔드가 준비되면 설정합니다.
+
+## UI 브랜치 구조와 이관 범위
+
+기존 개인 저장소 `yupo5710/YIPPEE_CLUB`의 `02e5a11` 커밋에서 프론트 코드와 공개 에셋만 이관했습니다.
+임시 Django 서버, 개인 환경변수, DB, 업로드, 설치 결과는 포함하지 않습니다.
+
+```text
+src/app/          Next.js 진입점·레이아웃
+src/screens/        기존 기능별 화면
+src/components/   공통 UI
+src/context/      로그인·아이 상태
+src/services/     API 응답 어댑터
+src/lib/          HTTP·토큰·날짜 유틸리티
+src/data/         화면 확인용 샘플
+public/assets/    이미지·글꼴·라이선스
+```
+
+이번 이관은 기존 React Router를 유지하는 클라이언트 렌더링 방식입니다.
+Next.js의 catch-all 경로가 모든 UI URL의 직접 접속·새로고침을 처리합니다.
+화면별 App Router 전환, 서버 렌더링 및 화면별 메타데이터는 후속 작업입니다.
+화면에 API 연동 코드가 있어도 실제 단체 백엔드와 계약 검증이 끝났다는 의미는 아닙니다.
+
+기존 로컬 API 연결 기능: 가입·로그인·프로필·아이·활동지·찜·장바구니.
+결제·환불·메일·PDF·사진 AI·배지 등은 미구현입니다. 일부 콘텐츠는 샘플입니다.
+화면 확인만 할 때 `NEXT_PUBLIC_USE_MOCK_API=true`로 설정하면 활동지 목록에 샘플을 사용합니다.
+이 옵션이 로그인 등 모든 API를 대체하지는 않습니다.
+기존 Figma 대조 범위는 `FIGMA_REVIEW.md`를 참조합니다.
+
+## 이관 검증 (2026-11-14)
+
+- Next.js 16.4.6 프로덕션 빌드, TypeScript, Prettier 통과
+- 기존 날짜 유틸리티 테스트 4개 통과
+- Edge에서 `/`, `/activities`, `/search`, `/login` 직접 접속 확인
+- 402px 화면 가로 넘침 없음, 한글 검색 제출·결과 URL·새로고침 유지 확인
+- 브라우저 실행 오류 없음
+
+브라우저 검증에서는 API를 빈 목록 응답으로 대체했습니다. 실제 단체 백엔드 연동·가입·결제 검증은 별도로 필요합니다.
