@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { useBack } from './NavigationHistory';
 import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 
@@ -13,6 +13,7 @@ export function ReferenceHeader({
   onBack?: () => void;
   right?: ReactNode;
 }) {
+  const back = useBack(backTo);
   return (
     <header className="reference-header">
       <div className="reference-header__back">
@@ -26,9 +27,14 @@ export function ReferenceHeader({
             <Icon name="back" size={32} />
           </button>
         ) : (
-          <Link className="icon-button" to={backTo} aria-label="뒤로가기">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={back}
+            aria-label="뒤로가기"
+          >
             <Icon name="back" size={32} />
-          </Link>
+          </button>
         )}
       </div>
       {title && (

@@ -10,6 +10,7 @@ import {
   login,
   signup,
 } from '../services/auth';
+import { useBack } from '../components/NavigationHistory';
 import { useAuth } from '../context/AuthContext';
 import { previewLoginEnabled } from '../lib/preview-session';
 
@@ -57,6 +58,7 @@ function PasswordField({
 export function AuthPage() {
   const { establish, previewLogin } = useAuth();
   const navigate = useNavigate();
+  const leave = useBack('/');
   const location = useLocation();
   const requestedPath: unknown = location.state?.from;
   const returnPath =
@@ -193,9 +195,14 @@ export function AuthPage() {
       )}
       {step === 'entry' ? (
         <div className="auth-entry-content reference-auth">
-          <Link className="icon-button auth-back" to="/" aria-label="뒤로가기">
+          <button
+            type="button"
+            className="icon-button auth-back"
+            onClick={leave}
+            aria-label="뒤로가기"
+          >
             <Icon name="back" size={32} />
-          </Link>
+          </button>
           <div className="auth-intro">
             <div className="auth-logo-placeholder" />
             <p>YIPPEE CLUB과 함께 성장해요!</p>

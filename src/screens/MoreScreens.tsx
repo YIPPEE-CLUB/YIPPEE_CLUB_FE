@@ -89,7 +89,13 @@ export function LicensesPage() {
     <div className="screen" data-figma-node="124:5003">
       <ScreenHeader title="오픈소스 라이선스" backTo="/settings" />
       <div className="screen-content support-rows">
-        {['React', 'React Router', 'Lalezar'].map((name) => (
+        {[
+          'React',
+          'React Router',
+          'Pretendard',
+          'HS집토끼체 Black',
+          'Lalezar',
+        ].map((name) => (
           <button
             className="menu-row"
             key={name}
@@ -108,6 +114,26 @@ export function LicensesPage() {
               ? 'SIL Open Font License 1.1'
               : 'MIT License'}
           </p>
+          {selected === 'Pretendard' && (
+            <a
+              className="text-link"
+              href="/fonts/Pretendard-LICENSE.txt"
+              target="_blank"
+              rel="noreferrer"
+            >
+              라이선스 전문 보기
+            </a>
+          )}
+          {selected === 'HS집토끼체 Black' && (
+            <a
+              className="text-link"
+              href="https://blog.naver.com/hp0/222895286224"
+              target="_blank"
+              rel="noreferrer"
+            >
+              제작자 배포 안내
+            </a>
+          )}
           {selected === 'Lalezar' && (
             <a
               className="text-link"

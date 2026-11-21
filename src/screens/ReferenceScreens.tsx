@@ -1,3 +1,4 @@
+import { useBack } from '../components/NavigationHistory';
 import { useChildren } from '../context/ChildrenContext';
 import {
   filterRecommendations,
@@ -192,6 +193,7 @@ export function OneClickOverlay({
 
 export function ReferenceRecommendationsPage(props: CatalogProps) {
   const navigate = useNavigate();
+  const back = useBack('/activities');
   const { activeChild } = useChildren();
   const child = activeChild;
   const { state } = useLocation();
@@ -246,11 +248,7 @@ export function ReferenceRecommendationsPage(props: CatalogProps) {
         {!items.length && <p>조건에 맞는 활동지가 없어요.</p>}
       </div>
       <div className="reference-results__actions">
-        <button
-          type="button"
-          className="button button--primary"
-          onClick={() => navigate(-1)}
-        >
+        <button type="button" className="button button--primary" onClick={back}>
           뒤로가기
         </button>
         <button

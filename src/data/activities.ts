@@ -1,32 +1,6 @@
 import type { Activity } from '../types';
 
 // 화면 검토용 데이터입니다. 구매 권한·배지·로그인을 가짜로 생성하지 않습니다.
-export const experienceActivities: Activity[] = [
-  {
-    id: 201,
-    title: 'Discover with English - Starter',
-    subtitle: '종로 국립어린이과학관',
-    category: '과학',
-    price: 80000,
-    duration: 60,
-    difficulty: 'easy',
-    ageYears: 7,
-    thumbnail: '/assets/science-poster.png',
-    location: '서울 중부',
-  },
-  {
-    id: 202,
-    title: 'Play with English - Starter',
-    subtitle: '서울상상나라',
-    category: '과학',
-    price: 75000,
-    duration: 60,
-    difficulty: 'easy',
-    ageYears: 7,
-    thumbnail: '/assets/imagination-poster.png',
-    location: '서울 북부',
-  },
-];
 export const sampleActivities: Activity[] = [
   {
     id: 101,
@@ -68,7 +42,6 @@ export const sampleActivities: Activity[] = [
     difficulty: 'easy',
     ageYears: 3,
   },
-  ...experienceActivities,
 ];
 
 export const categories = [

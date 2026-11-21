@@ -4,10 +4,12 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { AuthProvider } from './context/AuthContext';
 import { ChildrenProvider } from './context/ChildrenContext';
+import { NavigationHistory } from './components/NavigationHistory';
 
 export default function Application() {
   return (
     <BrowserRouter>
+      <NavigationHistory />
       <AuthProvider>
         <ChildrenProvider>
           <App />

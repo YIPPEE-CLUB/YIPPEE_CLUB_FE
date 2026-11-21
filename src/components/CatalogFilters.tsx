@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { WireDialog } from './WireDialog';
 import { Icon } from './Icon';
+import { DevelopmentIcon, developmentDomains } from './DevelopmentIcon';
 import type { Activity } from '../types';
 
 export interface Filters {
@@ -25,9 +26,7 @@ const sortLabels: Record<string, string> = {
   price_desc: '높은 가격순',
 };
 const choices: Record<string, [string, string][]> = {
-  domain: ['신체운동·건강', '의사소통', '사회관계', '예술경험', '자연탐구'].map(
-    (name) => [name, name],
-  ),
+  domain: developmentDomains.map(({ value, label }) => [value, label]),
   age: [1, 2, 3, 4, 5].map((age) => [String(age), `만 ${age}세`]),
   duration: [
     ['5-10', '5-10분'],
@@ -64,7 +63,9 @@ export function filterActivities(
       return (
         `${item.title} ${item.subtitle}`.includes(query) &&
         (category === '전체' ||
-          (item.categoryNames || [item.category]).includes(category)) &&
+          (category === 'AI'
+            ? item.isAiGenerated === true
+            : (item.categoryNames || [item.category]).includes(category))) &&
         (!filters.age ||
           (item.ageMinMonths !== undefined && item.ageMaxMonths !== undefined
             ? item.ageMinMonths <= Number(filters.age) * 12 + 11 &&
@@ -101,11 +102,13 @@ export function CatalogFilters({
   filters,
   onChange,
   search = false,
+  domainAvailable = true,
 }: {
   countLabel: string;
   filters: Filters;
   onChange: (value: Filters) => void;
   search?: boolean;
+  domainAvailable?: boolean;
 }) {
   const [open, setOpen] = useState<keyof Filters | null>(null);
   const [draft, setDraft] = useState('');
@@ -141,7 +144,12 @@ export function CatalogFilters({
         ))}
       </div>
       {open && (
-        <WireDialog title={titles[open]} sheet onClose={() => setOpen(null)}>
+        <WireDialog
+          title={titles[open]}
+          sheet
+          className="catalog-filter-sheet"
+          onClose={() => setOpen(null)}
+        >
           {open === 'sort' ? (
             <>
               <div className="section-heading">
@@ -174,7 +182,14 @@ export function CatalogFilters({
           ) : (
             <>
               <h2 className="filter-title">{titles[open]}</h2>
-              <div className="chips">
+              {open === 'domain' && !domainAvailable && (
+                <p className="wire-note" role="status">
+                  발달영역 데이터 준비 중이에요. 아이콘은 미리 확인할 수 있어요.
+                </p>
+              )}
+              <div
+                className={open === 'domain' ? 'development-options' : 'chips'}
+              >
                 {choices[open].map(([value, label]) => (
                   <button
                     key={value}
@@ -182,7 +197,19 @@ export function CatalogFilters({
                     aria-pressed={draft === value}
                     onClick={() => setDraft(draft === value ? '' : value)}
                   >
-                    {label}
+                    {open === 'domain' &&
+                      (() => {
+                        const domain = developmentDomains.find(
+                          (item) => item.value === value,
+                        );
+                        return domain ? (
+                          <DevelopmentIcon
+                            kind={domain.kind}
+                            color={domain.color}
+                          />
+                        ) : null;
+                      })()}
+                    <span>{label}</span>
                   </button>
                 ))}
               </div>
@@ -192,6 +219,7 @@ export function CatalogFilters({
                 </button>
                 <button
                   className="button button--accent"
+                  disabled={open === 'domain' && !domainAvailable && !!draft}
                   onClick={() => {
                     onChange({ ...filters, [open]: draft });
                     setOpen(null);

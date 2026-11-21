@@ -33,6 +33,17 @@ export function PopularPage({ activities, savedIds, onToggle }: CatalogProps) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setReviewsVisible(true), 180);
   }
+  function move(index: number) {
+    const first = track.current?.firstElementChild as HTMLElement | null;
+    if (!first) return;
+    const next = Math.max(0, Math.min(items.length - 1, index));
+    track.current?.scrollTo({
+      left: next * (first.offsetWidth + 20),
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'auto'
+        : 'smooth',
+    });
+  }
   return (
     <div className="popular-page" data-figma-node={frameIds[active]}>
       <ScreenHeader
@@ -68,11 +79,7 @@ export function PopularPage({ activities, savedIds, onToggle }: CatalogProps) {
                     active + (event.key === 'ArrowRight' ? 1 : -1),
                   ),
                 );
-                track.current?.children[next]?.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'nearest',
-                  inline: 'center',
-                });
+                move(next);
               }
             }}
           >
@@ -108,6 +115,29 @@ export function PopularPage({ activities, savedIds, onToggle }: CatalogProps) {
               <img src="/assets/6f48b.svg" alt="" />
               <strong>{active + 1}</strong>
             </div>
+          </div>
+          <div className="popular-controls" aria-label="인기 활동지 넘기기">
+            <button
+              type="button"
+              aria-label="이전 인기 활동지"
+              disabled={active === 0}
+              onClick={() => move(active - 1)}
+            >
+              <span className="carousel-arrow--previous">
+                <Icon name="chevron" size={18} />
+              </span>
+            </button>
+            <span aria-live="polite">
+              {active + 1} / {items.length}
+            </span>
+            <button
+              type="button"
+              aria-label="다음 인기 활동지"
+              disabled={active >= items.length - 1}
+              onClick={() => move(active + 1)}
+            >
+              <Icon name="chevron" size={18} />
+            </button>
           </div>
         </>
       ) : (

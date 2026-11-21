@@ -267,7 +267,7 @@ export function ChildFormPage() {
     setError('');
     try {
       await save(data, childId ? Number(childId) : undefined);
-      navigate('/children');
+      navigate('/children', { replace: true });
     } catch (cause) {
       setError((cause as Error).message);
     } finally {

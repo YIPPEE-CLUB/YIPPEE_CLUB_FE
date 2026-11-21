@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { OneClickOverlay } from './ReferenceScreens';
 import type { Activity } from '../types';
 import { trendingKeywords } from '../data/activities';
+import { HorizontalRail } from '../components/HorizontalRail';
 import { ActivityCard } from '../components/ActivityCard';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +25,7 @@ export function TrendingKeywords({
   compact?: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const listId = useId();
 
   return (
     <section className={`section ${compact ? 'section--compact' : ''}`}>
@@ -35,7 +37,7 @@ export function TrendingKeywords({
             <button
               className="text-button"
               aria-expanded={expanded}
-              aria-controls="trending-list"
+              aria-controls={listId}
               onClick={() => setExpanded(!expanded)}
             >
               {expanded ? '접기' : '펼치기'}
@@ -43,12 +45,13 @@ export function TrendingKeywords({
           )}
         </div>
         {expanded && (
-          <ol id="trending-list" className="trending-list">
+          <ol id={listId} className="trending-list">
             {trendingKeywords.map((keyword, index) => (
               <li key={keyword}>
                 {onSearch ? (
                   <button
                     className="trending-keyword"
+                    type="button"
                     onClick={() => onSearch(keyword)}
                   >
                     <span>{index + 1}</span>
@@ -90,8 +93,8 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
       <header className="home-header">
         <Link
           className="avatar-placeholder"
-          to="/profile"
-          aria-label="내 정보"
+          to="/badges"
+          aria-label="만세도감"
           onClick={(event) => {
             if (!user) {
               event.preventDefault();
@@ -212,7 +215,7 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
               전체보기 <Icon name="chevron" size={16} />
             </Link>
           </div>
-          <div className="home-activity-track">
+          <HorizontalRail label="인기 활동지" className="home-activity-track">
             {activities.slice(0, 3).map((activity) => (
               <ActivityCard
                 key={activity.id}
@@ -221,7 +224,7 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
                 onToggle={onToggle}
               />
             ))}
-          </div>
+          </HorizontalRail>
           {activities.length === 0 && (
             <p className="empty-state">아직 등록된 활동지가 없어요.</p>
           )}
@@ -234,7 +237,10 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
               전체보기 <Icon name="chevron" size={16} />
             </Link>
           </div>
-          <div className="home-guide-track">
+          <HorizontalRail
+            label="엄마아빠 가이드북"
+            className="home-guide-track"
+          >
             {['낯가리는 아이', '약속하기 연습'].map((title, index) => (
               <Link
                 className="guide-row"
@@ -246,7 +252,7 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
                 <Icon name="chevron" />
               </Link>
             ))}
-          </div>
+          </HorizontalRail>
         </section>
       </div>
       {params.get('finder') === '1' && (

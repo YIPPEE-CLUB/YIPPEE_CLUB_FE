@@ -275,7 +275,7 @@ export function ProfileEditPage() {
     setError('');
     try {
       await saveProfile(name, supportsNickname ? salutation : undefined);
-      navigate('/profile');
+      navigate('/profile', { replace: true });
     } catch (cause) {
       setError((cause as Error).message);
     } finally {

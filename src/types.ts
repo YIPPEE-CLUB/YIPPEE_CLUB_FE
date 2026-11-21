@@ -17,6 +17,8 @@ export interface Activity {
   pdf?: string;
   materials?: string[];
   developmentDomains?: string[];
+  // true/false는 제작 출처를 확인한 데이터에만 사용합니다. 미연결은 undefined입니다.
+  isAiGenerated?: boolean;
   ageYears: number;
   thumbnail?: string;
   location?: string;

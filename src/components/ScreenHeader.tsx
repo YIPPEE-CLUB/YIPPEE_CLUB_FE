@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { useBack } from './NavigationHistory';
 import { Icon } from './Icon';
 import type { ReactNode } from 'react';
 
@@ -13,6 +13,7 @@ export function ScreenHeader({
   onBack?: () => void;
   right?: ReactNode;
 }) {
+  const back = useBack(backTo);
   return (
     <header className="screen-header">
       {onBack ? (
@@ -25,9 +26,14 @@ export function ScreenHeader({
           <Icon name="back" size={32} />
         </button>
       ) : (
-        <Link className="icon-button" to={backTo} aria-label="뒤로가기">
+        <button
+          type="button"
+          className="icon-button"
+          onClick={back}
+          aria-label="뒤로가기"
+        >
           <Icon name="back" size={32} />
-        </Link>
+        </button>
       )}
       <h1>{title}</h1>
       <div className="screen-header__right">{right}</div>

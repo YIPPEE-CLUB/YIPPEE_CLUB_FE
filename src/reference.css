@@ -911,7 +911,7 @@
   background: #ddd;
 }
 .reference-catalog .trending-box {
-  padding: 16px 0;
+  padding: 16px;
   background: #fff;
 }
 .reference-catalog .trending-list {
@@ -1443,4 +1443,135 @@
   height: 28px;
   max-width: 26px;
   object-fit: contain;
+}
+
+/* 가로 목록은 터치·트랙패드·키보드·이동 버튼으로 모두 탐색합니다. */
+.horizontal-rail {
+  min-width: 0;
+}
+.rail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.rail-actions button,
+.popular-controls button {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: inherit;
+}
+.rail-actions button:disabled,
+.popular-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.home-activity-track,
+.home-guide-track {
+  max-width: calc(100% + 24px);
+  padding-right: 24px;
+  padding-bottom: 10px;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #dec58c transparent;
+  scroll-padding-inline: 0 24px;
+}
+.home-guide-track {
+  scroll-snap-type: x mandatory;
+}
+.home-guide-track > .guide-row {
+  scroll-snap-align: start;
+}
+.home-activity-track::-webkit-scrollbar,
+.home-guide-track::-webkit-scrollbar {
+  display: block;
+  height: 4px;
+}
+.home-activity-track::-webkit-scrollbar-thumb,
+.home-guide-track::-webkit-scrollbar-thumb {
+  background: #dec58c;
+  border-radius: 4px;
+}
+.trending-box .section-heading {
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.trending-box .section-heading small {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.5;
+}
+.trending-box .section-heading button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.trending-list {
+  margin: 0;
+  padding: 0;
+  gap: 10px 16px;
+}
+.trending-list li {
+  min-width: 0;
+}
+.trending-list a,
+.trending-keyword {
+  gap: 8px;
+  min-height: 24px;
+  line-height: 1.5;
+}
+.trending-list span {
+  min-width: 18px;
+  flex-shrink: 0;
+}
+.trending-list li a::after,
+.trending-list li button::after {
+  flex-shrink: 0;
+}
+.popular-reviews {
+  gap: 8px;
+  padding-top: 16px;
+}
+.popular-reviews p {
+  height: auto;
+  min-height: 48px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #e7dcf7;
+  overflow-wrap: anywhere;
+}
+.popular-carousel {
+  margin-top: 20px;
+  padding-top: 54px;
+}
+.popular-rank {
+  top: 0;
+}
+.popular-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 0 24px 24px;
+}
+.popular-controls span {
+  min-width: 48px;
+  text-align: center;
+  font-size: 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .popular-reviews {
+    transition: none;
+  }
+}
+
+.carousel-arrow--previous {
+  display: inline-flex;
+  transform: rotate(180deg);
 }

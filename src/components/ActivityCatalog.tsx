@@ -25,12 +25,7 @@ export function ActivityCatalog({
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<number[]>([]);
   const [finder, setFinder] = useState(false);
-  const filtered = filterActivities(
-    activities,
-    filters,
-    query,
-    category === 'AI' ? '전체' : category,
-  );
+  const filtered = filterActivities(activities, filters, query, category);
   const totalPages = Math.max(
     1,
     Math.ceil(filtered.length / CATALOG_PAGE_SIZE),
@@ -106,8 +101,7 @@ export function ActivityCatalog({
               type="button"
               aria-pressed={category === name}
               onClick={() => {
-                if (name === 'AI') setFinder(true);
-                else update('category', name);
+                update('category', name);
               }}
             >
               <span>
@@ -149,6 +143,9 @@ export function ActivityCatalog({
         </button>
       </div>
       <CatalogFilters
+        domainAvailable={activities.some(
+          (item) => item.developmentDomains?.length,
+        )}
         countLabel={`활동안 ${filtered.length}개`}
         filters={filters}
         onChange={(value) => {
@@ -156,6 +153,13 @@ export function ActivityCatalog({
           setPage(1);
         }}
       />
+      {category === 'AI' &&
+        !activities.some((item) => typeof item.isAiGenerated === 'boolean') && (
+          <p className="wire-note" role="status">
+            AI 제작 여부 데이터가 아직 연결되지 않았어요. 확인된 AI 활동지만 이
+            목록에 표시됩니다.
+          </p>
+        )}
       <div className="activity-grid">
         {items.map((activity) => (
           <ActivityCard
