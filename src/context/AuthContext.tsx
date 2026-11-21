@@ -13,21 +13,19 @@ import {
   saveTokens,
   type Tokens,
 } from '../lib/api';
-import { getProfile, updateProfile } from '../services/profile';
+import {
+  getProfile,
+  updateProfile,
+  mergeProfileUpdate,
+  type ProfileRead,
+} from '../services/profile';
 import {
   readPreviewSession,
   createPreviewSession,
   clearPreviewSession,
 } from '../lib/preview-session';
 
-export interface User {
-  id: number;
-  email: string;
-  name: string;
-  phone?: string;
-  nickname?: string;
-  active_child_id?: number | null;
-}
+export type User = ProfileRead;
 interface AuthState {
   user: User | null;
   ready: boolean;
@@ -37,6 +35,7 @@ interface AuthState {
   reload: () => Promise<void>;
   saveProfile: (name: string, nickname?: string) => Promise<void>;
   clearSession: () => void;
+  setActiveChild: (id: number | null, replacing?: number) => void;
   previewLogin: (email: string) => void;
   isPreview: boolean;
   loginNotice: boolean;
@@ -51,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [sessionError, setSessionError] = useState('');
   const generation = useRef(0);
+  const profileRevision = useRef(0);
   const [isPreview, setIsPreview] = useState(false);
   const [loginNotice, setLoginNotice] = useState(false);
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
@@ -77,11 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   async function reload() {
     const version = generation.current;
+    const revision = profileRevision.current;
     const session = readTokens()?.refresh_token;
     try {
       const profile = await getProfile();
       if (
         generation.current === version &&
+        profileRevision.current === revision &&
         readTokens()?.refresh_token === session
       ) {
         setUser(profile);
@@ -102,8 +104,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const profile = await updateProfile(name, nickname);
     if (version !== generation.current)
       throw new Error('로그인 상태가 변경됐어요. 다시 로그인해 주세요.');
-    setUser(profile);
+    profileRevision.current++;
+    setUser((current) =>
+      current && current.id === profile.id
+        ? mergeProfileUpdate(current, profile)
+        : current,
+    );
     setSessionError('');
+  }
+  function setActiveChild(id: number | null, replacing?: number) {
+    profileRevision.current++;
+    setUser((current) =>
+      current &&
+      (replacing === undefined || current.active_child_id === replacing)
+        ? { ...current, active_child_id: id }
+        : current,
+    );
   }
   function clearSession() {
     generation.current++;
@@ -180,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         reload,
         saveProfile,
         clearSession,
+        setActiveChild,
         previewLogin,
         isPreview,
         loginNotice,

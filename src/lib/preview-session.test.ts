@@ -18,6 +18,30 @@ afterEach(() => {
 });
 
 describe('개발용 가로그인', () => {
+  it('선택 아이는 프로필 GET으로 복원하고 PATCH는 기존 선택을 보존한다', async () => {
+    const preview = await import('./preview-session');
+    const children = await import('../services/children');
+    const profile = await import('../services/profile');
+    preview.createPreviewSession('preview@example.com');
+    const created = await children.createChild({
+      name: '새 아이',
+      birth_date: '2023-01-01',
+      gender: '',
+      interests: [],
+    });
+    expect((await profile.getProfile()).active_child_id).toBe(-1);
+    await children.selectChild(created.id);
+    const restored = await profile.getProfile();
+    expect(restored.active_child_id).toBe(created.id);
+    const patched = await profile.updateProfile('새 이름', '보호자');
+    expect(patched).not.toHaveProperty('active_child_id');
+    expect(profile.mergeProfileUpdate(restored, patched).active_child_id).toBe(
+      created.id,
+    );
+    expect((await profile.getProfile()).active_child_id).toBe(created.id);
+    await children.deleteChild(created.id);
+    expect((await profile.getProfile()).active_child_id).toBeNull();
+  });
   it('아이 서비스의 등록·직접 조회·수정·선택·삭제를 실제 서버 없이 확인한다', async () => {
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);

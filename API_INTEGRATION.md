@@ -1,5 +1,7 @@
 # MVP API 연동 — 2026-11-16
 
+> 최신 계약 정정 (2026-11-22): 아래 과거 기록의 “선택 아이 조회 API 없음”, “nickname 응답 없음”은 현재 BE main에 해당하지 않습니다. 최신 GET `/users/me`는 nickname과 active_child_id를 반환합니다. 마지막 계약 동기화 절을 우선합니다.
+
 기준: origin/develop → feature/api-intergration. 백엔드 코드·DB는 변경하지 않음.
 
 ## 연결한 계약
@@ -83,3 +85,14 @@
 - 자동 테스트 67개 통과. 신규 아이 계약·등록 월령 경계·잘못된 날짜·부분 수정과 빈 관심사·오류 전파 및 미리보기 CRUD/선택 흐름을 포함한다. TypeScript 검사·Next.js 프로덕션 빌드 통과.
 
 실제 DB·SMTP 설정은 아직 전달받지 못해 실제 BE를 통한 쓰기·소유권 종단 검증은 미실행이다. 브라우저 수동 검증도 이번에는 수행하지 않았다. BE 코드·DB·환경설정은 변경하지 않았다.
+
+## 최신 BE 계약 동기화 (2026-11-22)
+
+- FE 기준: 최신 origin/develop `dba8157` (아이 관리 PR #6 병합 포함). 새 브랜치 `fix/backend-contract-sync`.
+- BE 기준: GitHub main `c163a6c1caf22ecf393150ddf8ae3b1bd05178f3`. 원격의 accounts Serializer/View, children Serializer/View, 인증 URL·서비스·이메일 발송 처리, 찜·장바구니 입력 계약과 대조했다. 로컬 BE의 과거 코드 대신 이 커밋을 기준으로 한다.
+- GET `/users/me`: id/email/phone/name/nickname/active_child_id. PATCH `/users/me`: id/email/phone/name/nickname이며 선택 필드는 없다. 두 응답 타입을 구분하고 PATCH 결과 병합 시 현재 선택을 보존한다.
+- 선택 아이는 GET 프로필의 active_child_id와 본인 아이 목록으로 복원한다. 선택 PUT 성공 시 AuthContext를 갱신하고 모든 화면은 동일한 선택을 사용한다. 선택 아이 삭제 시 null로 해제한다. 선택·프로필 저장 이전에 시작된 늦은 프로필 조회가 최신 상태를 덮어쓰지 않도록 보호한다.
+- 로그인·가입·인증번호 발송/확인·토큰 갱신·비밀번호 변경/재설정의 URL/요청 필드는 최신 BE와 일치했다. Resend는 BE 메일 백엔드 설정이며 프론트에 API 키나 SMTP 설정을 추가하지 않는다.
+- 미리보기도 GET/PATCH 응답 차이·선택 PUT 응답·아이 등록 시 선택 미변경·선택 아이 삭제 시 null로 해제를 최신 BE와 맞췄다.
+- 자동 테스트 70개 통과. 프로필 GET 선택 상태, PATCH 이후 선택 보존, 미리보기 프로필 재조회 복원·삭제 해제 검증을 포함한다.
+- 실제 배포 서버는 전달된 테스트 계정의 가입 여부에 registered=false, 로그인에 400을 반환했다. 이는 최신 소스 계약 검증과 구분하며, 실제 계정 기반 프로필/아이 쓰기 종단 검증은 계정 확인 후 진행해야 한다. 실제 메일 발송 성공도 이번 변경으로 검증됐다고 간주하지 않는다.

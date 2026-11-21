@@ -6,6 +6,7 @@ import {
   updateProfile,
   changePassword,
   passwordError,
+  mergeProfileUpdate,
 } from './profile';
 
 afterEach(() => vi.resetAllMocks());
@@ -16,10 +17,51 @@ it('프로필 조회는 BE 응답을 그대로 반환한다', async () => {
     email: 'user@example.com',
     name: '보호자',
     phone: '',
+    nickname: '보호자',
+    active_child_id: 7,
   };
   vi.mocked(apiRequest).mockResolvedValueOnce(profile);
   await expect(getProfile()).resolves.toEqual(profile);
   expect(apiRequest).toHaveBeenCalledWith('/users/me');
+});
+
+it('선택 아이가 없는 GET 응답도 null 그대로 보존한다', async () => {
+  const profile = {
+    id: 1,
+    email: 'user@example.com',
+    name: '',
+    phone: '',
+    nickname: '',
+    active_child_id: null,
+  };
+  vi.mocked(apiRequest).mockResolvedValueOnce(profile);
+  await expect(getProfile()).resolves.toEqual(profile);
+});
+
+it('선택 상태가 없는 PATCH 응답을 병합해도 선택 아이가 지워지지 않는다', () => {
+  const current = {
+    id: 1,
+    email: 'user@example.com',
+    name: '기존',
+    phone: '',
+    nickname: '기존 호칭',
+    active_child_id: 7,
+  };
+  const patch = {
+    id: 1,
+    email: current.email,
+    name: '변경',
+    phone: '',
+    nickname: '보호자',
+  };
+  expect(mergeProfileUpdate(current, patch)).toEqual({
+    ...patch,
+    active_child_id: 7,
+  });
+  expect(
+    mergeProfileUpdate({ ...current, active_child_id: null }, patch)
+      .active_child_id,
+  ).toBeNull();
 });
 
 it('프로필 저장은 조회되지 않은 호칭을 기본값으로 덮어쓰지 않는다', async () => {
