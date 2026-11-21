@@ -73,8 +73,7 @@ export function HomePage({ activities, savedIds, onToggle }: CatalogProps) {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, ready, requestLogin } = useAuth();
-  const { children } = useChildren();
-  const child = children.find((item) => item.id === user?.active_child_id);
+  const { activeChild: child } = useChildren();
   useEffect(() => {
     if (
       ready &&

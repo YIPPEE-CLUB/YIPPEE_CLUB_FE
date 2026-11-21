@@ -191,8 +191,7 @@ export function SavedPage({ activities, savedIds, onToggle }: CatalogProps) {
 
 export function ProfilePage() {
   const { user } = useAuth();
-  const { children } = useChildren();
-  const child = children.find((item) => item.id === user?.active_child_id);
+  const { activeChild: child } = useChildren();
   return (
     <div className="profile-page" data-figma-node="118:1014">
       <div className="profile-top">
@@ -368,8 +367,7 @@ export function ProfileEditPage() {
 
 export function BadgesPage() {
   const { user } = useAuth();
-  const { children } = useChildren();
-  const child = children.find((item) => item.id === user?.active_child_id);
+  const { activeChild: child } = useChildren();
   const [help, setHelp] = useState(false);
   return (
     <div className="screen" data-figma-node="124:3533">

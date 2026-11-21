@@ -89,6 +89,13 @@ export function previewRequest(
     return session.user;
   }
   if (route === '/children' && method === 'GET') return page(session.children);
+  if (/^\/children\/-?\d+$/.test(route) && method === 'GET') {
+    const child = session.children.find(
+      (item) => item.id === Number(route.split('/').pop()),
+    );
+    if (!child) throw new Error('아이를 찾을 수 없어요.');
+    return child;
+  }
   if (route === '/activity-categories' && method === 'GET')
     return page(
       [

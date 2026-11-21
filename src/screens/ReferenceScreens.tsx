@@ -30,10 +30,8 @@ export function OneClickOverlay({
   onFind: (filters: PlayFilters) => void;
   activities?: Activity[];
 }) {
-  const { user } = useAuth();
-  const { children } = useChildren();
-  const child =
-    children.find((item) => item.id === user?.active_child_id) || children[0];
+  const { activeChild } = useChildren();
+  const child = activeChild;
   const [filters, setFilters] = useState<PlayFilters>({
     name: child?.name || '',
     age: '',
@@ -194,10 +192,8 @@ export function OneClickOverlay({
 
 export function ReferenceRecommendationsPage(props: CatalogProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { children } = useChildren();
-  const child =
-    children.find((item) => item.id === user?.active_child_id) || children[0];
+  const { activeChild } = useChildren();
+  const child = activeChild;
   const { state } = useLocation();
   const filters = state?.playFilters as PlayFilters | undefined;
   const items = filters

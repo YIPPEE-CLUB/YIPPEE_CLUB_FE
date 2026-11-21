@@ -263,8 +263,11 @@ export function App() {
             element={<ReviewsPage />}
           />
           <Route path="children" element={<ChildrenPage />} />
-          <Route path="children/new" element={<ChildFormPage />} />
-          <Route path="children/:childId/edit" element={<ChildFormPage />} />
+          <Route path="children/new" element={<ChildFormPage key="new" />} />
+          <Route
+            path="children/:childId/edit"
+            element={<ChildFormPage key={pathname} />}
+          />
           <Route path="cart" element={<CartPage />} />
           <Route
             path="checkout"

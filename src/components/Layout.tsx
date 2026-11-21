@@ -10,7 +10,6 @@ import { Icon, type IconName } from './Icon';
 import { WireDialog } from './WireDialog';
 import { useAuth } from '../context/AuthContext';
 import { useChildren } from '../context/ChildrenContext';
-import { apiRequest } from '../lib/api';
 import { childAgeLabel } from '../lib/date';
 
 const navigation: { path: string; label: string; icon: IconName }[] = [
@@ -40,22 +39,13 @@ function fanSector(index: number, count: number) {
 export function Layout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const {
-    user,
-    reload,
-    loginNotice,
-    loginPromptOpen,
-    requestLogin,
-    dismissLogin,
-  } = useAuth();
-  const { children } = useChildren();
+  const { user, loginNotice, loginPromptOpen, requestLogin, dismissLogin } =
+    useAuth();
+  const { children, activeChild, select } = useChildren();
   const [switching, setSwitching] = useState(false);
   const [childPage, setChildPage] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const activeChild = children.find(
-    (child) => child.id === user?.active_child_id,
-  );
   const hasNav = [
     '/',
     '/activities',
@@ -179,11 +169,8 @@ export function Layout() {
                   disabled={busy}
                   onClick={() => {
                     setBusy(true);
-                    void apiRequest('/users/me/active-child', {
-                      method: 'PUT',
-                      body: JSON.stringify({ child_id: child.id }),
-                    })
-                      .then(reload)
+                    setError('');
+                    void select(child.id)
                       .then(() => setSwitching(false))
                       .catch((cause: Error) => setError(cause.message))
                       .finally(() => setBusy(false));
