@@ -7,7 +7,6 @@ import { WireDialog } from '../components/WireDialog';
 import type { CatalogProps } from './HomePage';
 import { useAuth } from '../context/AuthContext';
 import { useChildren } from '../context/ChildrenContext';
-import { apiRequest } from '../lib/api';
 import { LoginPrompt } from './ConnectedPages';
 
 export function SavedPage({ activities, savedIds, onToggle }: CatalogProps) {
@@ -262,23 +261,21 @@ export function ProfilePage() {
 }
 
 export function ProfileEditPage() {
-  const { user, reload } = useAuth();
+  const { user, saveProfile } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState(user?.name || '');
-  const [salutation, setSalutation] = useState(user?.nickname || '어머님');
+  const [salutation, setSalutation] = useState(user?.nickname || '');
+  const supportsNickname = user?.nickname !== undefined;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [photo, setPhoto] = useState(false);
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (busy || !name.trim()) return;
     setBusy(true);
     setError('');
     try {
-      await apiRequest('/users/me', {
-        method: 'PATCH',
-        body: JSON.stringify({ name: name.trim(), nickname: salutation }),
-      });
-      await reload();
+      await saveProfile(name, supportsNickname ? salutation : undefined);
       navigate('/profile');
     } catch (cause) {
       setError((cause as Error).message);
@@ -308,25 +305,30 @@ export function ProfileEditPage() {
               이름
               <input
                 required
+                disabled={busy}
                 value={name}
                 maxLength={80}
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
-            <h2 className="wire-subtitle">호칭</h2>
-            <div className="chips">
-              {['어머님', '아버님', '보호자'].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`chip ${salutation === value ? 'is-selected' : ''}`}
-                  aria-pressed={salutation === value}
-                  onClick={() => setSalutation(value)}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
+            {supportsNickname && (
+              <>
+                <h2 className="wire-subtitle">호칭</h2>
+                <div className="chips">
+                  {['어머님', '아버님', '보호자'].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`chip ${salutation === value ? 'is-selected' : ''}`}
+                      aria-pressed={salutation === value}
+                      onClick={() => setSalutation(value)}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             {error && (
               <p className="form-error" role="alert">
                 {error}
@@ -338,7 +340,7 @@ export function ProfileEditPage() {
               className="button button--primary"
               disabled={busy || !name.trim()}
             >
-              저장하기
+              {busy ? '저장 중…' : '저장하기'}
             </button>
           </div>
         </>

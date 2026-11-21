@@ -78,7 +78,9 @@ export function AuthPage() {
   const [proof, setProof] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(
+    typeof location.state?.notice === 'string' ? location.state.notice : '',
+  );
   useEffect(() => {
     if (!expiresAt) return;
     const tick = () =>

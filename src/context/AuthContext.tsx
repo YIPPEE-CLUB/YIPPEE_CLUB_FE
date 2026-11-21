@@ -13,6 +13,7 @@ import {
   saveTokens,
   type Tokens,
 } from '../lib/api';
+import { getProfile, updateProfile } from '../services/profile';
 import {
   readPreviewSession,
   createPreviewSession,
@@ -34,6 +35,8 @@ interface AuthState {
   establish: (tokens: Tokens) => Promise<void>;
   logout: () => Promise<void>;
   reload: () => Promise<void>;
+  saveProfile: (name: string, nickname?: string) => Promise<void>;
+  clearSession: () => void;
   previewLogin: (email: string) => void;
   isPreview: boolean;
   loginNotice: boolean;
@@ -76,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const version = generation.current;
     const session = readTokens()?.refresh_token;
     try {
-      const profile = await apiRequest<User>('/users/me');
+      const profile = await getProfile();
       if (
         generation.current === version &&
         readTokens()?.refresh_token === session
@@ -93,6 +96,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setSessionError('로그인 정보를 불러오지 못했어요. 다시 시도해 주세요.');
     }
+  }
+  async function saveProfile(name: string, nickname?: string) {
+    const version = generation.current;
+    const profile = await updateProfile(name, nickname);
+    if (version !== generation.current)
+      throw new Error('로그인 상태가 변경됐어요. 다시 로그인해 주세요.');
+    setUser(profile);
+    setSessionError('');
+  }
+  function clearSession() {
+    generation.current++;
+    clearPreviewSession();
+    saveTokens(null);
+    setUser(null);
+    setIsPreview(false);
+    setSessionError('');
+    setLoginNotice(false);
+    setLoginPromptOpen(false);
   }
   async function establish(tokens: Tokens) {
     generation.current++;
@@ -157,6 +178,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         establish,
         logout,
         reload,
+        saveProfile,
+        clearSession,
         previewLogin,
         isPreview,
         loginNotice,

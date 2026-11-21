@@ -25,6 +25,7 @@ import type { Activity } from './types';
 import { useAuth } from './context/AuthContext';
 import { apiRequest, readTokens } from './lib/api';
 import type { Paginated } from './types';
+import { PasswordChangePage } from './screens/PasswordChangePage';
 import { PasswordResetPage } from './screens/PasswordResetPage';
 import { AuthPage } from './screens/AuthPage';
 import { SearchPage } from './screens/SearchPage';
@@ -304,15 +305,15 @@ export function App() {
           <Route path="policies/:type" element={<TextDocumentPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="cards/new" element={<AccountFormPage kind="card" />} />
-          <Route
-            path="settings/password"
-            element={<AccountFormPage kind="password" />}
-          />
+          <Route path="settings/password" element={<PasswordChangePage />} />
           <Route
             path="settings/phone"
             element={<AccountFormPage kind="phone" />}
           />
-          <Route path="password/reset" element={<PasswordResetPage />} />
+          <Route
+            path="password/reset"
+            element={<PasswordResetPage key={location.key} />}
+          />
           <Route
             path="system/network"
             element={<EmptyScreen kind="network" />}
