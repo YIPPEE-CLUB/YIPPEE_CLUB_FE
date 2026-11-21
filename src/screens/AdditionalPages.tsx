@@ -476,10 +476,10 @@ export function RecommendationsPage({
   onToggle,
 }: CatalogProps) {
   const { user } = useAuth();
-  const { children } = useChildren();
+  const { children, activeChild } = useChildren();
   const navigate = useNavigate();
   const [conditions, setConditions] = useState({
-    childId: user?.active_child_id || children[0]?.id || 0,
+    childId: activeChild?.id || 0,
     category: '그림/색칠',
     duration: '5-10분',
     place: '집 안',

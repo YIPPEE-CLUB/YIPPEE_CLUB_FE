@@ -2,78 +2,175 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { useAuth } from './AuthContext';
-import { apiRequest } from '../lib/api';
-import type { Paginated } from '../types';
+import {
+  listChildren,
+  createChild,
+  updateChild,
+  deleteChild,
+  selectChild,
+  type Child,
+  type ChildInput,
+} from '../services/children';
+export type { Child } from '../services/children';
 
-export interface Child {
-  id: number;
-  name: string;
-  birth_date: string;
-  gender: string;
-  interests: number[];
-}
 interface ChildrenState {
   children: Child[];
+  activeChild: Child | undefined;
   loading: boolean;
   error: string;
   reload: () => Promise<void>;
+  save: (data: ChildInput, id?: number) => Promise<void>;
+  remove: (id: number) => Promise<void>;
+  select: (id: number) => Promise<void>;
 }
 const Context = createContext<ChildrenState | null>(null);
 
-// 홈·하단 아이 전환·아이 관리가 같은 서버 데이터를 사용하도록 공유합니다.
 export function ChildrenProvider({
   children: content,
 }: {
   children: ReactNode;
 }) {
   const { user } = useAuth();
-  const [children, setChildren] = useState<Child[]>([]);
+  const owner = user?.id ?? null;
+  const identity = useRef(owner);
+  const version = useRef(0);
+  const listVersion = useRef(0);
+  const selecting = useRef(false);
+  if (identity.current !== owner) {
+    identity.current = owner;
+    version.current++;
+  }
+  const [state, setState] = useState<{
+    owner: number | null;
+    rows: Child[];
+    active: number | null;
+  }>({ owner: null, rows: [], active: null });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const children = state.owner === owner ? state.rows : [];
+  const activeChild = children.find((child) => child.id === state.active);
   async function reload() {
-    if (!user) {
-      setChildren([]);
-      return;
-    }
+    const epoch = version.current;
+    const request = ++listVersion.current;
+    if (owner === null) return;
     setLoading(true);
     setError('');
     try {
-      setChildren(
-        (await apiRequest<Paginated<Child>>('/children?page_size=100')).results,
-      );
+      const rows = await listChildren();
+      if (epoch !== version.current || request !== listVersion.current) return;
+      setState((previous) => ({
+        owner,
+        rows,
+        active:
+          previous.owner === owner &&
+          rows.some((child) => child.id === previous.active)
+            ? previous.active
+            : null,
+      }));
     } catch (cause) {
-      setError((cause as Error).message);
+      if (epoch === version.current && request === listVersion.current)
+        setError((cause as Error).message);
     } finally {
-      setLoading(false);
+      if (epoch === version.current && request === listVersion.current)
+        setLoading(false);
+    }
+  }
+  function checkOwner(expected: number | null) {
+    if (expected === null || identity.current !== expected)
+      throw new Error('로그인 상태가 변경됐어요. 다시 시도해 주세요.');
+  }
+  async function save(data: ChildInput, id?: number) {
+    checkOwner(owner);
+    const expectedVersion = version.current;
+    const child =
+      id === undefined ? await createChild(data) : await updateChild(id, data);
+    checkOwner(owner);
+    if (expectedVersion !== version.current)
+      throw new Error('아이 정보가 변경됐어요. 목록을 확인해 주세요.');
+    listVersion.current++;
+    setLoading(false);
+    setError('');
+    setState((previous) => {
+      const rows = previous.owner === owner ? previous.rows : [];
+      return {
+        owner,
+        active: previous.owner === owner ? previous.active : null,
+        rows: [...rows.filter((row) => row.id !== child.id), child].sort(
+          (a, b) => a.id - b.id,
+        ),
+      };
+    });
+    if (loading) void reload();
+  }
+  async function remove(id: number) {
+    checkOwner(owner);
+    const expectedVersion = version.current;
+    await deleteChild(id);
+    checkOwner(owner);
+    if (expectedVersion !== version.current)
+      throw new Error('아이 정보가 변경됐어요. 목록을 다시 확인해 주세요.');
+    listVersion.current++;
+    setLoading(false);
+    setError('');
+    setState((previous) => ({
+      ...previous,
+      rows: previous.rows.filter((child) => child.id !== id),
+      active: previous.active === id ? null : previous.active,
+    }));
+    if (loading) void reload();
+  }
+  async function select(id: number) {
+    checkOwner(owner);
+    if (selecting.current)
+      throw new Error(
+        '아이 선택을 처리하고 있어요. 잠시 후 다시 시도해 주세요.',
+      );
+    if (!children.some((child) => child.id === id))
+      throw new Error('아이 목록을 다시 확인해 주세요.');
+    const epoch = version.current;
+    selecting.current = true;
+    try {
+      const response = await selectChild(id);
+      checkOwner(owner);
+      if (epoch !== version.current)
+        throw new Error('로그인 상태가 변경됐어요. 다시 시도해 주세요.');
+      setState((previous) =>
+        previous.owner === owner &&
+        previous.rows.some((child) => child.id === response.active_child_id)
+          ? { ...previous, active: response.active_child_id }
+          : previous,
+      );
+    } finally {
+      selecting.current = false;
     }
   }
   useEffect(() => {
-    let active = true;
-    setChildren([]);
     setError('');
-    if (user) {
-      setLoading(true);
-      apiRequest<Paginated<Child>>('/children?page_size=100')
-        .then((page) => {
-          if (active) setChildren(page.results);
-        })
-        .catch((cause: Error) => {
-          if (active) setError(cause.message);
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
-    } else setLoading(false);
+    setState({ owner, rows: [], active: null });
+    setLoading(false);
+    if (owner !== null) void reload();
     return () => {
-      active = false;
+      version.current++;
     };
-  }, [user?.id]);
+  }, [owner]);
   return (
-    <Context.Provider value={{ children, loading, error, reload }}>
+    <Context.Provider
+      value={{
+        children,
+        activeChild,
+        loading,
+        error,
+        reload,
+        save,
+        remove,
+        select,
+      }}
+    >
       {content}
     </Context.Provider>
   );

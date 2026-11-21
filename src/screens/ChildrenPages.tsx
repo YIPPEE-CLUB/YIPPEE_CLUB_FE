@@ -1,41 +1,23 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useChildren } from '../context/ChildrenContext';
 import { useAuth } from '../context/AuthContext';
-import { ScreenHeader } from '../components/ScreenHeader';
 import { Icon } from '../components/Icon';
 import { WireDialog } from '../components/WireDialog';
-import { apiRequest } from '../lib/api';
+import {
+  getChild,
+  childInputError,
+  type ChildInput,
+} from '../services/children';
+import { listCategories, type Category } from '../services/activities';
 import { LoginPrompt } from './ConnectedPages';
-import { childAgeLabel, formatBirthDate } from '../lib/date';
+import { childAgeLabel } from '../lib/date';
 import { ReferenceHeader } from '../components/ReferenceHeader';
 
-interface Category {
-  id: number;
-  name: string;
-  code: string;
-}
-const interestOptions = [
-  ['writing', '글쓰기'],
-  ['painting', '미술 놀이'],
-  ['craft', '만들기'],
-  ['drawing', '그림 그리기'],
-  ['dance', '노래하고 춤추기'],
-  ['gross_motor', '대근육'],
-  ['fine_motor', '소근육'],
-  ['reading', '책 읽기'],
-  ['shop', '가게 놀이'],
-  ['role', '역할 놀이'],
-  ['korean', '한글'],
-  ['english', '영어'],
-  ['number', '수학'],
-  ['explore', '탐구'],
-  ['hanja', '한자'],
-];
-
 export function ChildrenPage() {
-  const { user, reload: reloadUser } = useAuth();
-  const { children, loading, error, reload } = useChildren();
+  const { user } = useAuth();
+  const { children, loading, error, reload, remove, activeChild, select } =
+    useChildren();
   const [deleting, setDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState('');
@@ -50,6 +32,13 @@ export function ChildrenPage() {
       ) : loading ? (
         <div className="screen-content">
           <p role="status">불러오는 중…</p>
+        </div>
+      ) : error ? (
+        <div className="screen-content">
+          <p role="alert">{error}</p>
+          <button type="button" onClick={() => void reload()}>
+            다시 시도
+          </button>
         </div>
       ) : children.length ? (
         <div className="screen-content">
@@ -67,6 +56,20 @@ export function ChildrenPage() {
                       : ''}
                 </small>
               </div>
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy || activeChild?.id === child.id}
+                onClick={() => {
+                  setBusy(true);
+                  setFailure('');
+                  void select(child.id)
+                    .catch((cause: Error) => setFailure(cause.message))
+                    .finally(() => setBusy(false));
+                }}
+              >
+                {activeChild?.id === child.id ? '선택됨' : '선택하기'}
+              </button>
               <Link
                 className="icon-button"
                 to={`/children/${child.id}/edit`}
@@ -138,10 +141,10 @@ export function ChildrenPage() {
               className="button button--primary"
               disabled={busy}
               onClick={() => {
+                if (busy) return;
                 setBusy(true);
-                void apiRequest(`/children/${deleting}`, { method: 'DELETE' })
-                  .then(reload)
-                  .then(reloadUser)
+                setFailure('');
+                void remove(deleting)
                   .then(() => setDeleting(null))
                   .catch((cause: Error) => setFailure(cause.message))
                   .finally(() => setBusy(false));
@@ -159,11 +162,17 @@ export function ChildrenPage() {
 export function ChildFormPage() {
   const { childId } = useParams();
   const navigate = useNavigate();
-  const { user, reload: reloadUser } = useAuth();
-  const { children, reload } = useChildren();
-  const existing = children.find((child) => child.id === Number(childId));
+  const { user, isPreview } = useAuth();
+  const { save } = useChildren();
+  const [detailLoading, setDetailLoading] = useState(!!childId);
+  const [detailError, setDetailError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const [categoryAttempt, setCategoryAttempt] = useState(0);
+  const [categoryError, setCategoryError] = useState('');
+  const [categoryLoading, setCategoryLoading] = useState(true);
+  const pending = useRef(false);
   const [name, setName] = useState('');
-  const [gender, setGender] = useState('unspecified');
+  const [gender, setGender] = useState('');
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
@@ -174,21 +183,53 @@ export function ChildFormPage() {
   const [step, setStep] = useState(0);
   const [leave, setLeave] = useState(false);
   useEffect(() => {
-    if (existing) {
-      setName(existing.name);
-      setGender(existing.gender);
-      const parts = existing.birth_date.split('-');
-      setYear(parts[0]);
-      setMonth(parts[1]);
-      setDay(parts[2]);
-      setInterests(existing.interests);
+    if (!childId) return;
+    const controller = new AbortController();
+    setDetailLoading(true);
+    setDetailError('');
+    if (
+      !(isPreview ? /^-?\d+$/.test(childId) : /^[1-9]\d*$/.test(childId)) ||
+      !Number.isSafeInteger(Number(childId))
+    ) {
+      setDetailError('아이를 찾을 수 없어요.');
+      setDetailLoading(false);
+      return;
     }
-  }, [existing?.id]);
+    void getChild(Number(childId), controller.signal)
+      .then((child) => {
+        if (controller.signal.aborted) return;
+        setName(child.name);
+        setGender(child.gender);
+        const [y, m, d] = child.birth_date.split('-');
+        setYear(y);
+        setMonth(m);
+        setDay(d);
+        setInterests(child.interests);
+      })
+      .catch((cause: Error) => {
+        if (!controller.signal.aborted) setDetailError(cause.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDetailLoading(false);
+      });
+    return () => controller.abort();
+  }, [childId, attempt, isPreview]);
   useEffect(() => {
-    void apiRequest<{ results: Category[] }>('/activity-categories')
-      .then((data) => setCategories(data.results))
-      .catch((cause: Error) => setError(cause.message));
-  }, []);
+    const controller = new AbortController();
+    setCategoryLoading(true);
+    setCategoryError('');
+    void listCategories(controller.signal)
+      .then((rows) => {
+        if (!controller.signal.aborted) setCategories(rows);
+      })
+      .catch((cause: Error) => {
+        if (!controller.signal.aborted) setCategoryError(cause.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCategoryLoading(false);
+      });
+    return () => controller.abort();
+  }, [categoryAttempt]);
   const currentYear = Number(
     new Intl.DateTimeFormat('en', {
       timeZone: 'Asia/Seoul',
@@ -197,22 +238,23 @@ export function ChildFormPage() {
   );
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const birthDate = `${year}-${month}-${day}`;
-    if (formatBirthDate(birthDate) === '날짜 확인 필요') {
-      setError('생년월일을 확인해 주세요.');
+    if (
+      pending.current ||
+      detailLoading ||
+      detailError ||
+      categoryLoading ||
+      categoryError
+    )
       return;
-    }
-    const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' })
-      .format(new Date())
-      .split('-')
-      .map(Number);
-    const ageMonths =
-      (today[0] - Number(year)) * 12 +
-      today[1] -
-      Number(month) -
-      (today[2] < Number(day) ? 1 : 0);
-    if (ageMonths < 12 || ageMonths > 72) {
-      setError('12개월(만1세)~72개월(만5세)까지 이용할 수 있어요.');
+    const data: ChildInput = {
+      name: name.trim(),
+      gender,
+      birth_date: `${year}-${month}-${day}`,
+      interests,
+    };
+    const invalid = childInputError(data, !childId);
+    if (invalid) {
+      setError(invalid);
       return;
     }
     setError('');
@@ -220,24 +262,16 @@ export function ChildFormPage() {
       setStep(1);
       return;
     }
+    pending.current = true;
     setBusy(true);
     setError('');
     try {
-      await apiRequest(childId ? `/children/${childId}` : '/children', {
-        method: childId ? 'PATCH' : 'POST',
-        body: JSON.stringify({
-          name: name.trim(),
-          gender,
-          birth_date: `${year}-${month}-${day}`,
-          interests,
-        }),
-      });
-      await reload();
-      await reloadUser();
+      await save(data, childId ? Number(childId) : undefined);
       navigate('/children');
     } catch (cause) {
       setError((cause as Error).message);
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   }
@@ -249,13 +283,41 @@ export function ChildFormPage() {
     >
       <ReferenceHeader
         title={childId ? '아이 정보 수정' : '아이 추가'}
-        onBack={() => (step ? setStep(0) : setLeave(true))}
+        onBack={() => {
+          if (!busy) {
+            if (step) setStep(0);
+            else setLeave(true);
+          }
+        }}
       />
       {!user ? (
         <LoginPrompt />
+      ) : detailLoading ? (
+        <p role="status">아이 정보를 불러오는 중…</p>
+      ) : detailError ? (
+        <div className="screen-content">
+          <p role="alert">{detailError}</p>
+          <button
+            type="button"
+            onClick={() => setAttempt((value) => value + 1)}
+          >
+            다시 시도
+          </button>
+        </div>
       ) : (
         <>
           <div className="screen-content form-stack">
+            {!childId && step === 0 && categoryError && (
+              <div>
+                <p role="alert">{categoryError}</p>
+                <button
+                  type="button"
+                  onClick={() => setCategoryAttempt((value) => value + 1)}
+                >
+                  관심 카테고리 다시 불러오기
+                </button>
+              </div>
+            )}
             {!childId && (
               <p className="child-steps">
                 <span className={step === 0 ? 'is-current' : ''}>1</span> 아이
@@ -274,6 +336,7 @@ export function ChildFormPage() {
                     placeholder="실명"
                     required
                     maxLength={40}
+                    disabled={busy}
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                   />
@@ -282,11 +345,12 @@ export function ChildFormPage() {
                   성별
                   <select
                     className="wire-select"
+                    disabled={busy}
                     aria-label="성별"
                     value={gender}
                     onChange={(event) => setGender(event.target.value)}
                   >
-                    <option value="unspecified">성별</option>
+                    <option value="">선택 안 함</option>
                     <option value="female">여아</option>
                     <option value="male">남아</option>
                   </select>
@@ -304,23 +368,32 @@ export function ChildFormPage() {
                 <div className="date-selects">
                   <select
                     className="wire-select"
+                    disabled={busy}
                     aria-label="생년월일 연도"
                     required
                     value={year}
                     onChange={(event) => setYear(event.target.value)}
                   >
                     <option value="">연도</option>
-                    {Array.from(
-                      { length: 12 },
-                      (_, index) => currentYear - index,
-                    ).map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
+                    {[
+                      ...new Set([
+                        ...Array.from(
+                          { length: 12 },
+                          (_, index) => currentYear - index,
+                        ),
+                        ...(year ? [Number(year)] : []),
+                      ]),
+                    ]
+                      .sort((a, b) => b - a)
+                      .map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
                   </select>
                   <select
                     className="wire-select"
+                    disabled={busy}
                     aria-label="생년월일 월"
                     required
                     value={month}
@@ -337,6 +410,7 @@ export function ChildFormPage() {
                   </select>
                   <select
                     className="wire-select"
+                    disabled={busy}
                     aria-label="생년월일 일"
                     required
                     value={day}
@@ -363,40 +437,44 @@ export function ChildFormPage() {
             {(childId || step === 1) && (
               <>
                 <h2 className="wire-subtitle">관심있는 놀이활동</h2>
-                {[
-                  interestOptions.slice(0, 4),
-                  interestOptions.slice(4, 10),
-                  interestOptions.slice(10),
-                ].map((group, groupIndex) => (
-                  <div className="chips" key={groupIndex}>
-                    {group.map(([code, label]) => {
-                      const category = categories.find(
-                        (item) => item.code === code,
-                      );
-                      const selected =
-                        !!category && interests.includes(category.id);
-                      return (
-                        <button
-                          type="button"
-                          key={code}
-                          disabled={!category}
-                          className={`chip ${selected ? 'is-selected' : ''}`}
-                          aria-pressed={selected}
-                          onClick={() => {
-                            if (category)
-                              setInterests(
-                                selected
-                                  ? interests.filter((id) => id !== category.id)
-                                  : [...interests, category.id],
-                              );
-                          }}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
+                {categoryLoading ? (
+                  <p role="status">관심 카테고리를 불러오는 중…</p>
+                ) : categoryError ? (
+                  <div>
+                    <p role="alert">{categoryError}</p>
+                    <button
+                      type="button"
+                      onClick={() => setCategoryAttempt((value) => value + 1)}
+                    >
+                      다시 시도
+                    </button>
                   </div>
-                ))}
+                ) : categories.length ? (
+                  <div className="chips">
+                    {categories.map((category) => (
+                      <button
+                        type="button"
+                        key={category.id}
+                        disabled={busy}
+                        className={`chip ${interests.includes(category.id) ? 'is-selected' : ''}`}
+                        aria-pressed={interests.includes(category.id)}
+                        onClick={() =>
+                          setInterests((previous) =>
+                            previous.includes(category.id)
+                              ? previous.filter((id) => id !== category.id)
+                              : [...previous, category.id],
+                          )
+                        }
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p>
+                    선택할 관심 카테고리가 없어요. 관심사 없이 저장할 수 있어요.
+                  </p>
+                )}
               </>
             )}
             {error && (
@@ -408,7 +486,15 @@ export function ChildFormPage() {
           <div className="screen-actions">
             <button
               className="button button--primary"
-              disabled={busy || !name.trim() || !year || !month || !day}
+              disabled={
+                busy ||
+                categoryLoading ||
+                !!categoryError ||
+                !name.trim() ||
+                !year ||
+                !month ||
+                !day
+              }
             >
               {busy
                 ? '저장 중…'
