@@ -35,7 +35,7 @@ export function ChildrenProvider({
 }: {
   children: ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, setActiveChild } = useAuth();
   const owner = user?.id ?? null;
   const identity = useRef(owner);
   const version = useRef(0);
@@ -48,12 +48,13 @@ export function ChildrenProvider({
   const [state, setState] = useState<{
     owner: number | null;
     rows: Child[];
-    active: number | null;
-  }>({ owner: null, rows: [], active: null });
+  }>({ owner: null, rows: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const children = state.owner === owner ? state.rows : [];
-  const activeChild = children.find((child) => child.id === state.active);
+  const activeChild = children.find(
+    (child) => child.id === user?.active_child_id,
+  );
   async function reload() {
     const epoch = version.current;
     const request = ++listVersion.current;
@@ -63,15 +64,7 @@ export function ChildrenProvider({
     try {
       const rows = await listChildren();
       if (epoch !== version.current || request !== listVersion.current) return;
-      setState((previous) => ({
-        owner,
-        rows,
-        active:
-          previous.owner === owner &&
-          rows.some((child) => child.id === previous.active)
-            ? previous.active
-            : null,
-      }));
+      setState({ owner, rows });
     } catch (cause) {
       if (epoch === version.current && request === listVersion.current)
         setError((cause as Error).message);
@@ -99,7 +92,6 @@ export function ChildrenProvider({
       const rows = previous.owner === owner ? previous.rows : [];
       return {
         owner,
-        active: previous.owner === owner ? previous.active : null,
         rows: [...rows.filter((row) => row.id !== child.id), child].sort(
           (a, b) => a.id - b.id,
         ),
@@ -120,8 +112,8 @@ export function ChildrenProvider({
     setState((previous) => ({
       ...previous,
       rows: previous.rows.filter((child) => child.id !== id),
-      active: previous.active === id ? null : previous.active,
     }));
+    if (user?.active_child_id === id) setActiveChild(null, id);
     if (loading) void reload();
   }
   async function select(id: number) {
@@ -139,19 +131,14 @@ export function ChildrenProvider({
       checkOwner(owner);
       if (epoch !== version.current)
         throw new Error('로그인 상태가 변경됐어요. 다시 시도해 주세요.');
-      setState((previous) =>
-        previous.owner === owner &&
-        previous.rows.some((child) => child.id === response.active_child_id)
-          ? { ...previous, active: response.active_child_id }
-          : previous,
-      );
+      setActiveChild(response.active_child_id);
     } finally {
       selecting.current = false;
     }
   }
   useEffect(() => {
     setError('');
-    setState({ owner, rows: [], active: null });
+    setState({ owner, rows: [] });
     setLoading(false);
     if (owner !== null) void reload();
     return () => {

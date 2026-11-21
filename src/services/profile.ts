@@ -4,11 +4,24 @@ export interface Profile {
   id: number;
   email: string;
   name: string;
-  phone?: string;
+  phone: string;
+  nickname: string;
+}
+
+export interface ProfileRead extends Profile {
+  active_child_id: number | null;
+}
+
+// PATCH 응답에는 선택 상태가 없으므로 기존 선택을 유지합니다.
+export function mergeProfileUpdate(
+  current: ProfileRead,
+  updated: Profile,
+): ProfileRead {
+  return { ...current, ...updated };
 }
 
 export function getProfile() {
-  return apiRequest<Profile>('/users/me');
+  return apiRequest<ProfileRead>('/users/me');
 }
 
 export function updateProfile(name: string, nickname?: string) {

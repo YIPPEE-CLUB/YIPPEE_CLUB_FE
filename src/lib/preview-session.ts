@@ -37,6 +37,7 @@ export function createPreviewSession(email: string): User {
     user: {
       id: -1,
       email: normalized,
+      phone: '',
       name: normalized.split('@')[0],
       nickname: '부모님',
       active_child_id: -1,
@@ -79,14 +80,15 @@ export function previewRequest(
     session.user.name = body.name ?? session.user.name;
     session.user.nickname = body.nickname ?? session.user.nickname;
     save();
-    return session.user;
+    const { id, email, phone, name, nickname } = session.user;
+    return { id, email, phone, name, nickname };
   }
   if (route === '/users/me/active-child' && method === 'PUT') {
     if (!session.children.some((child) => child.id === body.child_id))
       throw new Error('아이를 찾을 수 없어요.');
     session.user.active_child_id = body.child_id;
     save();
-    return session.user;
+    return { active_child_id: session.user.active_child_id };
   }
   if (route === '/children' && method === 'GET') return page(session.children);
   if (/^\/children\/-?\d+$/.test(route) && method === 'GET') {
@@ -136,7 +138,6 @@ export function previewRequest(
         interests: body.interests || [],
       };
       session.children.push(child);
-      session.user.active_child_id = child.id;
       save();
       return child;
     }
@@ -157,7 +158,7 @@ export function previewRequest(
     const id = Number(route.split('/').pop());
     session.children = session.children.filter((child) => child.id !== id);
     if (session.user.active_child_id === id)
-      session.user.active_child_id = session.children[0]?.id ?? null;
+      session.user.active_child_id = null;
     save();
     return undefined;
   }
